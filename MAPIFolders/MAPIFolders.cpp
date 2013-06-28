@@ -178,7 +178,7 @@ Error:
 	return lpRoot;
 }
 
-void TraverseFolders(CComPtr<IMAPISession> session, LPMAPIFOLDER baseFolder, DWORD depth)
+void TraverseFolders(CComPtr<IMAPISession> session, LPMAPIFOLDER baseFolder)
 {
 	SRowSet *pmrows = NULL;
 	LPMAPITABLE hierarchyTable = NULL;
@@ -216,12 +216,12 @@ void TraverseFolders(CComPtr<IMAPISession> session, LPMAPIFOLDER baseFolder, DWO
 		ULONG ulObjType = NULL;
 		LPMAPIFOLDER lpSubfolder = NULL;
 		CORg(lpAdminMDB->OpenEntry(prow->lpProps[COL_ENTRYID].Value.bin.cb, (LPENTRYID)prow->lpProps[COL_ENTRYID].Value.bin.lpb, NULL, MAPI_BEST_ACCESS, &ulObjType, (LPUNKNOWN *) &lpSubfolder));
-		if (lpSubfolder && depth > 0)
+		if (lpSubfolder)
 		{
 			opValidateFolderACL->ProcessFolder(lpSubfolder);
 		}
 
-		TraverseFolders(session, lpSubfolder, depth++);
+		TraverseFolders(session, lpSubfolder);
 
 		lpSubfolder->Release();
 	}
@@ -253,7 +253,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		if (lpPFRoot == NULL)
 			goto Error;
 
-		TraverseFolders(spSession, lpPFRoot, 0);
+		TraverseFolders(spSession, lpPFRoot);
 
 	}
 
