@@ -15,7 +15,7 @@ OperationBase::~OperationBase(void)
 }
 
 
-void OperationBase::ProcessFolder(LPMAPIFOLDER folder)
+void OperationBase::ProcessFolder(LPMAPIFOLDER folder, std::wstring folderPath)
 {
 	return;
 }

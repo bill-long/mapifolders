@@ -9,7 +9,7 @@ class ValidateFolderACL :
 public:
 	ValidateFolderACL(CComPtr<IMAPISession> session);
 	~ValidateFolderACL(void);
-	void ProcessFolder(LPMAPIFOLDER folder);
+	void ProcessFolder(LPMAPIFOLDER folder, std::wstring folderPath);
 
 private:
 

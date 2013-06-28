@@ -21,7 +21,7 @@ class OperationBase
 public:
 	OperationBase(CComPtr<IMAPISession> session);
 	~OperationBase(void);
-	virtual void ProcessFolder(LPMAPIFOLDER folder);
+	virtual void ProcessFolder(LPMAPIFOLDER folder, std::wstring folderPath);
 	std::string GetStringFromFolderPath(LPMAPIFOLDER folder);
 
 private:

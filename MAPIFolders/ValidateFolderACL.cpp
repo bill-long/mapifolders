@@ -14,7 +14,7 @@ ValidateFolderACL::~ValidateFolderACL(void)
 }
 
 
-void ValidateFolderACL::ProcessFolder(LPMAPIFOLDER folder)
+void ValidateFolderACL::ProcessFolder(LPMAPIFOLDER folder, std::wstring folderPath)
 {
 	BOOL bValidDACL = false;
 	PACL pACL = NULL;
@@ -24,10 +24,15 @@ void ValidateFolderACL::ProcessFolder(LPMAPIFOLDER folder)
 	LPSPropValue lpPropValue = NULL;
 	ULONG cValues = 0;
 
-	std::string folderPathString = this->GetStringFromFolderPath(folder);
-	std::cout << "Checking ACL on folder: " << folderPathString.c_str() << std::endl;
+	std::wcout << "Checking ACL on folder: " << folderPath.c_str() << std::endl;
 
-	CORg(folder->GetProps(&rgPropTag, NULL, &cValues, &lpPropValue));
+	hr = folder->GetProps(&rgPropTag, NULL, &cValues, &lpPropValue);
+	if (FAILED(hr))
+	{
+		std::wcout << L"     Failed to read security descriptor on this folder. hr = " << std::hex << hr << std::endl;
+		return;
+	}
+
 	if (lpPropValue && lpPropValue->ulPropTag == PR_NT_SECURITY_DESCRIPTOR)
 	{
 		PSECURITY_DESCRIPTOR pSecurityDescriptor = SECURITY_DESCRIPTOR_OF(lpPropValue->Value.bin.lpb);
@@ -166,7 +171,7 @@ void ValidateFolderACL::ProcessFolder(LPMAPIFOLDER folder)
 				}
 				else if (AceType == ACCESS_ALLOWED_ACE_TYPE && SidNameUse == SidTypeGroup && groupDenyEncountered == true)
 				{
-					std::wcout << L"ACL on this folder is non-canonical!";
+					std::wcout << L"     ACL on this folder is non-canonical!";
 					aclIsNonCanonical = true;
 				}
 

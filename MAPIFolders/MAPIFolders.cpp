@@ -18,6 +18,7 @@
 #include <edkguid.h>
 #include <edkmdb.h>
 #include <strsafe.h>
+#include <algorithm>
 
 #pragma warning( disable : 4127)
 
@@ -178,7 +179,7 @@ Error:
 	return lpRoot;
 }
 
-void TraverseFolders(CComPtr<IMAPISession> session, LPMAPIFOLDER baseFolder)
+void TraverseFolders(CComPtr<IMAPISession> session, LPMAPIFOLDER baseFolder, std::wstring parentPath)
 {
 	SRowSet *pmrows = NULL;
 	LPMAPITABLE hierarchyTable = NULL;
@@ -213,15 +214,23 @@ void TraverseFolders(CComPtr<IMAPISession> session, LPMAPIFOLDER baseFolder)
 	for (UINT i=0; i != pmrows->cRows; i++)
 	{
 		SRow *prow = pmrows->aRow + i;
+		LPCWSTR pwz = NULL;
+		if (PR_DISPLAY_NAME_W == prow->lpProps[COL_DISPLAYNAME_W].ulPropTag)
+			pwz = prow->lpProps[COL_DISPLAYNAME_W].Value.lpszW;
+
+		std::wstring thisPath(parentPath.c_str());
+		thisPath.append(L"\\");
+		thisPath.append(pwz);
+
 		ULONG ulObjType = NULL;
 		LPMAPIFOLDER lpSubfolder = NULL;
 		CORg(lpAdminMDB->OpenEntry(prow->lpProps[COL_ENTRYID].Value.bin.cb, (LPENTRYID)prow->lpProps[COL_ENTRYID].Value.bin.lpb, NULL, MAPI_BEST_ACCESS, &ulObjType, (LPUNKNOWN *) &lpSubfolder));
 		if (lpSubfolder)
 		{
-			opValidateFolderACL->ProcessFolder(lpSubfolder);
+			opValidateFolderACL->ProcessFolder(lpSubfolder, thisPath);
 		}
 
-		TraverseFolders(session, lpSubfolder);
+		TraverseFolders(session, lpSubfolder, thisPath);
 
 		lpSubfolder->Release();
 	}
@@ -253,7 +262,8 @@ int _tmain(int argc, _TCHAR* argv[])
 		if (lpPFRoot == NULL)
 			goto Error;
 
-		TraverseFolders(spSession, lpPFRoot);
+		std::wstring rootPath(L"");
+		TraverseFolders(spSession, lpPFRoot, rootPath);
 
 	}
 
