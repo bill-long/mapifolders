@@ -8,3 +8,6 @@
 			goto Error; \
 		} \
 	} while (0)
+
+#include "OperationBase.h"
+#include "ValidateFolderACL.h"

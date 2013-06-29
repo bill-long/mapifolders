@@ -7,11 +7,12 @@ class ValidateFolderACL :
 	public OperationBase
 {
 public:
-	ValidateFolderACL(CComPtr<IMAPISession> session);
+	ValidateFolderACL(bool fixBadACLs);
 	~ValidateFolderACL(void);
 	void ProcessFolder(LPMAPIFOLDER folder, std::wstring folderPath);
 
 private:
-
+	bool FixBadACLs;
+	void FixACL(LPMAPIFOLDER folder);
 };
 

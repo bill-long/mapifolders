@@ -3,9 +3,10 @@
 #include "MAPIFolders.h"
 
 
-ValidateFolderACL::ValidateFolderACL(CComPtr<IMAPISession> session)
-	:OperationBase(session)
+ValidateFolderACL::ValidateFolderACL(bool fixBadACLs)
+	:OperationBase()
 {
+	this->FixBadACLs = fixBadACLs;
 }
 
 
@@ -38,7 +39,7 @@ void ValidateFolderACL::ProcessFolder(LPMAPIFOLDER folder, std::wstring folderPa
 		PSECURITY_DESCRIPTOR pSecurityDescriptor = SECURITY_DESCRIPTOR_OF(lpPropValue->Value.bin.lpb);
 		if (!IsValidSecurityDescriptor(pSecurityDescriptor))
 		{
-			std::wcout << "Invalid security descriptor.";
+			std::wcout << L"     Invalid security descriptor." << std::endl;
 			goto Error;
 		}
 
@@ -50,6 +51,7 @@ void ValidateFolderACL::ProcessFolder(LPMAPIFOLDER folder, std::wstring folderPa
 
 		if (!(succeeded && bValidDACL && pACL))
 		{
+			std::wcout << L"     Invalid DACL." << std::endl;
 			goto Error;
 		}
 
@@ -62,6 +64,7 @@ void ValidateFolderACL::ProcessFolder(LPMAPIFOLDER folder, std::wstring folderPa
 
 		if (!succeeded)
 		{
+			std::wcout << L"     Could not get ACL information." << std::endl;
 			goto Error;
 		}
 
@@ -81,7 +84,10 @@ void ValidateFolderACL::ProcessFolder(LPMAPIFOLDER folder, std::wstring folderPa
 
 			if (pACE)
 			{
-				// From MySecInfo.cpp in MfcMapi
+				//
+				// Most of the following code from MySecInfo.cpp in MfcMapi
+				//
+
 				BYTE	AceType = 0;
 				BYTE	AceFlags = 0;
 				ACCESS_MASK	Mask = 0;
@@ -171,7 +177,7 @@ void ValidateFolderACL::ProcessFolder(LPMAPIFOLDER folder, std::wstring folderPa
 				}
 				else if (AceType == ACCESS_ALLOWED_ACE_TYPE && SidNameUse == SidTypeGroup && groupDenyEncountered == true)
 				{
-					std::wcout << L"     ACL on this folder is non-canonical!";
+					std::wcout << L"     ACL on this folder is non-canonical!" << std::endl;
 					aclIsNonCanonical = true;
 				}
 
@@ -180,10 +186,20 @@ void ValidateFolderACL::ProcessFolder(LPMAPIFOLDER folder, std::wstring folderPa
 
 			}
 		}
+
+		if (aclIsNonCanonical)
+		{
+			this->FixACL(folder);
+		}
 	}
 
 Cleanup:
 	return;
 Error:
 	goto Cleanup;
+}
+
+void ValidateFolderACL::FixACL(LPMAPIFOLDER folder)
+{
+
 }
