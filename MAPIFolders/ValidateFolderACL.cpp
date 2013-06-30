@@ -27,11 +27,21 @@ void ValidateFolderACL::ProcessFolder(LPMAPIFOLDER folder, std::wstring folderPa
 
 	std::wcout << "Checking ACL on folder: " << folderPath.c_str() << std::endl;
 
+RetryGetProps:
 	hr = folder->GetProps(&rgPropTag, NULL, &cValues, &lpPropValue);
 	if (FAILED(hr))
 	{
-		std::wcout << L"     Failed to read security descriptor on this folder. hr = " << std::hex << hr << std::endl;
-		return;
+		if (hr == MAPI_E_TIMEOUT)
+		{
+			std::wcout << L"     Encountered a timeout trying to read the security descriptor. Retrying in 5 seconds..." << std::endl;
+			Sleep(5000);
+			goto RetryGetProps;
+		}
+		else
+		{
+			std::wcout << L"     Failed to read security descriptor on this folder. hr = " << std::hex << hr << std::endl;
+			goto Error;
+		}
 	}
 
 	if (lpPropValue && lpPropValue->ulPropTag == PR_NT_SECURITY_DESCRIPTOR)

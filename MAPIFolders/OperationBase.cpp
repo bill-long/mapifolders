@@ -217,10 +217,42 @@ void OperationBase::TraverseFolders(CComPtr<IMAPISession> session, LPMAPIFOLDER 
 		}
 	};
 
-	CORg(baseFolder->GetHierarchyTable(NULL, &hierarchyTable));
+RetryGetHierarchyTable:
+	hr = baseFolder->GetHierarchyTable(NULL, &hierarchyTable);
+	if (FAILED(hr))
+	{
+		if (hr == MAPI_E_TIMEOUT)
+		{
+			std::wcout << L"     Encountered a timeout in GetHierarchyTable. Retrying in 5 seconds..." << std::endl;
+			Sleep(5000);
+			goto RetryGetHierarchyTable;
+		}
+		else
+		{
+			std::wcout << L"     GetHierarchyTable returned an error. hr = " << std::hex << hr << std::endl;
+			goto Error;
+		}
+	}
+
 	CORg(hierarchyTable->SetColumns((LPSPropTagArray)&mcols, TBL_BATCH));
 	CORg(hierarchyTable->SeekRow(BOOKMARK_BEGINNING, 0, 0));
-	CORg(hierarchyTable->QueryRows(1000000, 0, &pmrows));
+	
+RetryQueryRows:
+	hr = hierarchyTable->QueryRows(1000000, 0, &pmrows);
+	if (FAILED(hr))
+	{
+		if (hr == MAPI_E_TIMEOUT)
+		{
+			std::wcout << L"     Encountered a timeout in QueryRows. Retrying in 5 seconds..." << std::endl;
+			Sleep(5000);
+			goto RetryQueryRows;
+		}
+		else
+		{
+			std::wcout << L"     QueryRows returned an error. hr = " << std::hex << hr << std::endl;
+			goto Error;
+		}
+	}
 
 	for (UINT i=0; i != pmrows->cRows; i++)
 	{
@@ -235,7 +267,24 @@ void OperationBase::TraverseFolders(CComPtr<IMAPISession> session, LPMAPIFOLDER 
 
 		ULONG ulObjType = NULL;
 		LPMAPIFOLDER lpSubfolder = NULL;
-		CORg(lpAdminMDB->OpenEntry(prow->lpProps[COL_ENTRYID].Value.bin.cb, (LPENTRYID)prow->lpProps[COL_ENTRYID].Value.bin.lpb, NULL, MAPI_BEST_ACCESS, &ulObjType, (LPUNKNOWN *) &lpSubfolder));
+
+RetryOpenEntry:
+		hr = lpAdminMDB->OpenEntry(prow->lpProps[COL_ENTRYID].Value.bin.cb, (LPENTRYID)prow->lpProps[COL_ENTRYID].Value.bin.lpb, NULL, MAPI_BEST_ACCESS, &ulObjType, (LPUNKNOWN *) &lpSubfolder);
+		if (FAILED(hr))
+		{
+			if (hr == MAPI_E_TIMEOUT)
+			{
+				std::wcout << L"     Encountered a timeout in OpenEntry. Retrying in 5 seconds..." << std::endl;
+				Sleep(5000);
+				goto RetryOpenEntry;
+			}
+			else
+			{
+				std::wcout << L"     OpenEntry returned an error. hr = " << std::hex << hr << std::endl;
+				goto Error;
+			}
+		}
+
 		if (lpSubfolder)
 		{
 			this->ProcessFolder(lpSubfolder, thisPath);
