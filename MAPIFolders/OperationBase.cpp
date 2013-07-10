@@ -42,36 +42,35 @@ Error:
 	return NULL;
 }
 
+
 void OperationBase::DoOperation()
 {
 	HRESULT hr = S_OK;
-	LPMDB lpMDB = NULL;
-	LPMAPIFOLDER lpPFRoot = NULL;
+	lpAdminMDB = NULL;
+	lpPFRoot = NULL;
+	lpSession = NULL;
+	std::wstring rootPath(L"");
 
 	MAPIINIT_0  MAPIINIT= { 0, MAPI_MULTITHREAD_NOTIFICATIONS};
 
 	CORg(MAPIInitialize (&MAPIINIT));
 
-	{	// IMAPISession Smart Pointer Context
-		CComPtr<IMAPISession> spSession;
-		CORg(MAPILogonEx(0, NULL, NULL, MAPI_UNICODE | MAPI_LOGON_UI | MAPI_EXTENDED | MAPI_ALLOW_OTHERS | MAPI_LOGON_UI | MAPI_EXPLICIT_PROFILE, &spSession));
+	CORg(MAPILogonEx(0, NULL, NULL, MAPI_UNICODE | MAPI_LOGON_UI | MAPI_EXTENDED | MAPI_ALLOW_OTHERS | MAPI_LOGON_UI | MAPI_EXPLICIT_PROFILE, &lpSession));
 		
-		lpPFRoot = GetPFRoot(spSession);
-		if (lpPFRoot == NULL)
-			goto Error;
+	lpPFRoot = GetPFRoot(lpSession);
+	if (lpPFRoot == NULL)
+		goto Error;
 
-		std::wstring rootPath(L"");
-		TraverseFolders(spSession, lpPFRoot, rootPath);
-	}
+	TraverseFolders(lpSession, lpPFRoot, rootPath);
 
 Cleanup:
 	if (lpPFRoot)
 		lpPFRoot->Release();
-	if (lpMDB)
-		lpMDB->Release();
-
+	if (lpAdminMDB)
+		lpAdminMDB->Release();
+	if (lpSession)
+		lpSession->Release();
 	return;
-
 Error:
 	goto Cleanup;
 }
@@ -227,6 +226,12 @@ RetryGetHierarchyTable:
 			Sleep(5000);
 			goto RetryGetHierarchyTable;
 		}
+		else if (hr == MAPI_E_NETWORK_ERROR)
+		{
+			std::wcout << L"     Encountered a network error in GetHierarchyTable. Retrying in 5 seconds..." << std::endl;
+			Sleep(5000);
+			goto RetryGetHierarchyTable;
+		}
 		else
 		{
 			std::wcout << L"     GetHierarchyTable returned an error. hr = " << std::hex << hr << std::endl;
@@ -238,12 +243,20 @@ RetryGetHierarchyTable:
 	CORg(hierarchyTable->SeekRow(BOOKMARK_BEGINNING, 0, 0));
 	
 RetryQueryRows:
-	hr = hierarchyTable->QueryRows(1000000, 0, &pmrows);
+	hr = hierarchyTable->QueryRows(10000, 0, &pmrows);
 	if (FAILED(hr))
 	{
 		if (hr == MAPI_E_TIMEOUT)
 		{
 			std::wcout << L"     Encountered a timeout in QueryRows. Retrying in 5 seconds..." << std::endl;
+			pmrows = NULL;
+			Sleep(5000);
+			goto RetryQueryRows;
+		}
+		else if (hr == MAPI_E_NETWORK_ERROR)
+		{
+			std::wcout << L"     Encountered a network error in QueryRows. Retrying in 5 seconds..." << std::endl;
+			pmrows = NULL;
 			Sleep(5000);
 			goto RetryQueryRows;
 		}
@@ -275,6 +288,12 @@ RetryOpenEntry:
 			if (hr == MAPI_E_TIMEOUT)
 			{
 				std::wcout << L"     Encountered a timeout in OpenEntry. Retrying in 5 seconds..." << std::endl;
+				Sleep(5000);
+				goto RetryOpenEntry;
+			}
+			else if (hr == MAPI_E_NETWORK_ERROR)
+			{
+				std::wcout << L"     Encountered a network error in OpenEntry. Retrying in 5 seconds..." << std::endl;
 				Sleep(5000);
 				goto RetryOpenEntry;
 			}

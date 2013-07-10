@@ -28,6 +28,8 @@ private:
 	LPMAPIFOLDER GetPFRoot(IMAPISession *pSession);
 	void TraverseFolders(CComPtr<IMAPISession> session, LPMAPIFOLDER baseFolder, std::wstring parentPath);
 	HRESULT BuildServerDN(LPCTSTR szServerName, LPCTSTR szPost, LPTSTR* lpszServerDN);
+	LPMAPIFOLDER lpPFRoot;
 	LPMDB lpAdminMDB;
+	LPMAPISESSION lpSession;
 };
 
