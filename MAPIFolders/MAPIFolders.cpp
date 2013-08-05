@@ -9,9 +9,36 @@
 int _tmain(int argc, _TCHAR* argv[])
 {
 	UserArgs ua;
-	ua.Parse(argc, argv);
-	ValidateFolderACL *checkACLOp = new ValidateFolderACL(false);
-	OperationBase *op = checkACLOp;
-	op->DoOperation();
+	if (ua.Parse(argc, argv))
+	{
+
+#ifdef DEBUG
+		// Dump parsed args
+		std::cout << "Parsed successfully.";
+		std::cout << "fCheckFolderAcl: " << ua.fCheckFolderAcl() << std::endl;
+		std::cout << "fCheckItems: " << ua.fCheckItems() << std::endl;
+		std::cout << "fDisplayHelp: " << ua.fDisplayHelp() << std::endl;
+		std::cout << "fFixFolderAcl: " << ua.fFixFolderAcl() << std::endl;
+		std::cout << "fFixItems: " << ua.fFixItems() << std::endl;
+#endif
+
+		if(ua.fCheckFolderAcl())
+		{
+			ValidateFolderACL *checkACLOp = new ValidateFolderACL(false);
+			OperationBase *op = checkACLOp;
+			op->DoOperation();
+		}
+		else
+		{
+			std::cerr << "unimplemented feature." << std::endl;
+		}
+	}
+
+	else
+	{
+		// Parsing error
+		std::cerr << "Error parsing command line." << std::endl;
+	}
+
 }
 
