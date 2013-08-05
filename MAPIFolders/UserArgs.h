@@ -36,10 +36,10 @@ public:
 	ActionScope nScope() {return _scope;}
 
 	// Parse the command line and return whether successful
-	bool Parse(int argc, const wchar_t *argv[]);
+	bool Parse(int argc,  wchar_t *argv[]);
 
 	// Parse the command line and return the actions selected as a code; for testing; throws exception on error
-	unsigned long ParseGetActions(int argc, wchar_t const *argv[]);
+	unsigned long ParseGetActions(int argc, wchar_t  *argv[]);
 
 private:
 	// Structure to hold acceptable arguments for parsing

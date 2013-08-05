@@ -8,6 +8,8 @@
 
 int _tmain(int argc, _TCHAR* argv[])
 {
+	UserArgs ua;
+	ua.Parse(argc, argv);
 	ValidateFolderACL *checkACLOp = new ValidateFolderACL(false);
 	OperationBase *op = checkACLOp;
 	op->DoOperation();

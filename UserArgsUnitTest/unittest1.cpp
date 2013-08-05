@@ -13,8 +13,8 @@ namespace UnitTests
 	public:
 		/*
 		** HOW TO MAKE A TEST METHOD
-		** 1. Create a const array of wchar_t strings and its count (argc) to mimic the C runtime's parsed argv
-		**    A. For example, const wchar_t *argv[] = {L"ArgTest"};
+		** 1. Create a  array of wchar_t strings and its count (argc) to mimic the C runtime's parsed argv
+		**    A. For example,  wchar_t *argv[] = {L"ArgTest"};
 		**    B. As in C/C++, argv[0] is the application name
 		** 2. Pass your argc and the argv to an instance of UserArgs' Parse() or ParseGetActions()
 		**    A. Parse() just returns success
@@ -31,7 +31,7 @@ namespace UnitTests
 		*/
 		TEST_METHOD(Nothing)
 		{
-			const wchar_t *argv[] = {L"ArgTest"};
+			 wchar_t *argv[] = {L"ArgTest"};
 
 			UserArgs ua;
 			bool retVal = ua.Parse(1, argv);
@@ -41,7 +41,7 @@ namespace UnitTests
 		
 		TEST_METHOD(Help)
 		{
-			const wchar_t *argv[] = {L"ArgTest", L"-?"};
+			 wchar_t *argv[] = {L"ArgTest", L"-?"};
 
 			UserArgs ua;
 			unsigned long retVal = ua.ParseGetActions(2, argv);
@@ -51,49 +51,49 @@ namespace UnitTests
 
 		TEST_METHOD(CheckFolderACL)
 		{
-			const wchar_t *argv[] = {L"ArgTest", L"-checkFolderACL"};
+			 wchar_t *argv[] = {L"ArgTest", L"-checkFolderACL"};
 			Assert::AreEqual<unsigned long>((new UserArgs())->ParseGetActions(2, argv), 0x00000001);
 		}
 
 		TEST_METHOD(FixFolderACL)
 		{
-			const wchar_t *argv[] = {L"ArgTest", L"-fixFolderACL"};
+			 wchar_t *argv[] = {L"ArgTest", L"-fixFolderACL"};
 			Assert::AreEqual<unsigned long>((new UserArgs())->ParseGetActions(2, argv), 0x00000002);
 		}
 
 		TEST_METHOD(CheckItems)
 		{
-			const wchar_t *argv[] = {L"ArgTest", L"-checkItems"};
+			 wchar_t *argv[] = {L"ArgTest", L"-checkItems"};
 			Assert::AreEqual<unsigned long>((new UserArgs())->ParseGetActions(2, argv), 0x00000004);
 		}
 
 		TEST_METHOD(FixItems)
 		{
-			const wchar_t *argv[] = {L"ArgTest", L"-fixItems"};
+			 wchar_t *argv[] = {L"ArgTest", L"-fixItems"};
 			Assert::AreEqual<unsigned long>((new UserArgs())->ParseGetActions(2, argv), 0x00000008);
 		}
 		
 		// Test that a call with an action/switch does not interfere with subsequent switches
 		TEST_METHOD(RunTwice)
 		{
-			const wchar_t *argv1[] = {L"ArgTest", L"-fixItems"};
+			 wchar_t *argv1[] = {L"ArgTest", L"-fixItems"};
 			Assert::AreEqual<unsigned long>((new UserArgs())->ParseGetActions(2, argv1), 0x00000008);
-			const wchar_t *argv2[] = {L"ArgTest", L"-fixFolderACL"};
+			 wchar_t *argv2[] = {L"ArgTest", L"-fixFolderACL"};
 			Assert::AreEqual<unsigned long>((new UserArgs())->ParseGetActions(2, argv2), 0x00000002);
 		}
 		
 		// Result should be 0b1111=0xF
 		TEST_METHOD(Everything)
 		{
-			const wchar_t *argv[] = {L"ArgTest", L"-checkFolderACL", L"-fixFolderACL", L"-checkItems", L"-fixItems"};
+			 wchar_t *argv[] = {L"ArgTest", L"-checkFolderACL", L"-fixFolderACL", L"-checkItems", L"-fixItems"};
 			Assert::AreEqual<unsigned long>((new UserArgs())->ParseGetActions(5, argv), 0xF);
 		}
 
 		// Try all parameters, NOT including help, and a folder
 		TEST_METHOD(EverythingAndFolder)
 		{
-			const wchar_t *pwszMyFolder = L"MyPath\\MyFolder";
-			const wchar_t *argv[] = {L"ArgTest", L"-checkFolderACL", L"-fixFolderACL", L"-checkItems", L"-fixItems", pwszMyFolder};
+			 wchar_t *pwszMyFolder = L"MyPath\\MyFolder";
+			 wchar_t *argv[] = {L"ArgTest", L"-checkFolderACL", L"-fixFolderACL", L"-checkItems", L"-fixItems", pwszMyFolder};
 			std::wstring *pstrArgVal;
 			UserArgs *pua = new UserArgs();
 			Assert::AreEqual<unsigned long>(pua->ParseGetActions(6, argv), 0xF);
@@ -105,8 +105,8 @@ namespace UnitTests
 		// Try all parameters, including help, and a folder
 		TEST_METHOD(EverythingFolderAndHelp)
 		{
-			const wchar_t *pwszMyFolder = L"MyPath\\MyFolder";
-			const wchar_t *argv[] = {L"ArgTest", L"-checkFolderACL", L"-fixFolderACL", L"-checkItems", L"-fixItems", L"-?", pwszMyFolder};
+			 wchar_t *pwszMyFolder = L"MyPath\\MyFolder";
+			 wchar_t *argv[] = {L"ArgTest", L"-checkFolderACL", L"-fixFolderACL", L"-checkItems", L"-fixItems", L"-?", pwszMyFolder};
 			UserArgs *pua = new UserArgs();
 			Assert::AreEqual<unsigned long>(pua->ParseGetActions(7, argv), 0x8000000F);
 			Assert::AreEqual(pwszMyFolder, pua->pstrPublicFolder()->c_str(), true);
@@ -116,8 +116,8 @@ namespace UnitTests
 		// Try all parameters, including help, and a folder
 		TEST_METHOD(EverythingFolderAndHelpSlashes)
 		{
-			const wchar_t *pwszMyFolder = L"MyPath\\MyFolder";
-			const wchar_t *argv[] = {L"ArgTest", L"/checkFolderACL", L"/fixFolderACL", L"/checkItems", L"/fixItems", L"/?", pwszMyFolder};
+			 wchar_t *pwszMyFolder = L"MyPath\\MyFolder";
+			 wchar_t *argv[] = {L"ArgTest", L"/checkFolderACL", L"/fixFolderACL", L"/checkItems", L"/fixItems", L"/?", pwszMyFolder};
 			UserArgs *pua = new UserArgs();
 			Assert::AreEqual<unsigned long>(pua->ParseGetActions(7, argv), 0x8000000F);
 			Assert::AreEqual(pwszMyFolder, pua->pstrPublicFolder()->c_str(), true);
@@ -127,8 +127,8 @@ namespace UnitTests
 		// Try all parameters, including help, and a folder
 		TEST_METHOD(EverythingFolderAndHelpMixedSlashes1)
 		{
-			const wchar_t *pwszMyFolder = L"MyPath\\MyFolder";
-			const wchar_t *argv[] = {L"ArgTest", L"/checkFolderACL", L"-fixFolderACL", L"/checkItems", L"-fixItems", L"/?", pwszMyFolder};
+			 wchar_t *pwszMyFolder = L"MyPath\\MyFolder";
+			 wchar_t *argv[] = {L"ArgTest", L"/checkFolderACL", L"-fixFolderACL", L"/checkItems", L"-fixItems", L"/?", pwszMyFolder};
 			UserArgs *pua = new UserArgs();
 			Assert::AreEqual<unsigned long>(pua->ParseGetActions(7, argv), 0x8000000F);
 			Assert::AreEqual(pwszMyFolder, pua->pstrPublicFolder()->c_str(), true);
@@ -138,8 +138,8 @@ namespace UnitTests
 		// Try all parameters, including help, and a folder
 		TEST_METHOD(EverythingFolderAndHelpMixedSlashes2)
 		{
-			const wchar_t *pwszMyFolder = L"MyPath\\MyFolder";
-			const wchar_t *argv[] = {L"ArgTest", L"-checkFolderACL", L"/fixFolderACL", L"-checkItems", L"/fixItems", L"-?", pwszMyFolder};
+			 wchar_t *pwszMyFolder = L"MyPath\\MyFolder";
+			 wchar_t *argv[] = {L"ArgTest", L"-checkFolderACL", L"/fixFolderACL", L"-checkItems", L"/fixItems", L"-?", pwszMyFolder};
 			UserArgs *pua = new UserArgs();
 			Assert::AreEqual<unsigned long>(pua->ParseGetActions(7, argv), 0x8000000F);
 			Assert::AreEqual(pwszMyFolder, pua->pstrPublicFolder()->c_str(), true);
@@ -149,63 +149,63 @@ namespace UnitTests
 		// Run the pair CheckFolderACL, CheckItem
 		TEST_METHOD(CheckFolderACLCheckItems)
 		{
-			const wchar_t *argv[] = {L"ArgTest", L"-checkFolderACL", L"-checkItems"};
+			 wchar_t *argv[] = {L"ArgTest", L"-checkFolderACL", L"-checkItems"};
 			Assert::AreEqual<unsigned long>((new UserArgs())->ParseGetActions(3, argv), 0x5);
 		}
 		
 		// Run the pair CheckFolderACL, FixFolderACL
 		TEST_METHOD(CheckFolderACLFixFolderACL)
 		{
-			const wchar_t *argv[] = {L"ArgTest", L"-checkFolderACL", L"-fixFolderACL"};
+			 wchar_t *argv[] = {L"ArgTest", L"-checkFolderACL", L"-fixFolderACL"};
 			Assert::AreEqual<unsigned long>((new UserArgs())->ParseGetActions(3, argv), 0x3);
 		}
 		
 		// Run the pair CheckFolderACL, FixItems
 		TEST_METHOD(CheckFolderACLFixItems)
 		{
-			const wchar_t *argv[] = {L"ArgTest", L"-checkFolderACL", L"-fixItems"};
+			 wchar_t *argv[] = {L"ArgTest", L"-checkFolderACL", L"-fixItems"};
 			Assert::AreEqual<unsigned long>((new UserArgs())->ParseGetActions(3, argv), 0x9);
 		}
 		
 		// Run the pair FixFolderACL, CheckItem
 		TEST_METHOD(FixFolderACLCheckItems)
 		{
-			const wchar_t *argv[] = {L"ArgTest", L"-fixFolderACL", L"-checkItems"};
+			 wchar_t *argv[] = {L"ArgTest", L"-fixFolderACL", L"-checkItems"};
 			Assert::AreEqual<unsigned long>((new UserArgs())->ParseGetActions(3, argv), 0x6);
 		}
 		
 		// Run the pair FixFolderACL, FixItems
 		TEST_METHOD(FixFolderACLFixItems)
 		{
-			const wchar_t *argv[] = {L"ArgTest", L"-fixFolderACL", L"-fixItems"};
+			 wchar_t *argv[] = {L"ArgTest", L"-fixFolderACL", L"-fixItems"};
 			Assert::AreEqual<unsigned long>((new UserArgs())->ParseGetActions(3, argv), 0xA);
 		}
 		
 		// Run the triple CheckFolderACL, FixItems, CheckItems
 		TEST_METHOD(CheckFolderACLFixItemsCheckItems)
 		{
-			const wchar_t *argv[] = {L"ArgTest", L"-checkFolderACL", L"-fixItems", L"-checkItems"};
+			 wchar_t *argv[] = {L"ArgTest", L"-checkFolderACL", L"-fixItems", L"-checkItems"};
 			Assert::AreEqual<unsigned long>((new UserArgs())->ParseGetActions(4, argv), 0xd);
 		}
 		
 		// Run the triple FixFolderACL, FixItems, CheckItems
 		TEST_METHOD(FixFolderACLFixItemsCheckItems)
 		{
-			const wchar_t *argv[] = {L"ArgTest", L"-fixFolderACL", L"-fixItems", L"-checkItems"};
+			 wchar_t *argv[] = {L"ArgTest", L"-fixFolderACL", L"-fixItems", L"-checkItems"};
 			Assert::AreEqual<unsigned long>((new UserArgs())->ParseGetActions(4, argv), 0xe);
 		}
 		
 		// Run the triple FixFolderACL, CheckFolderACL, CheckItems
 		TEST_METHOD(FixFolderACLCheckFolderACLCheckItems)
 		{
-			const wchar_t *argv[] = {L"ArgTest", L"-fixFolderACL", L"-checkFolderACL", L"-checkItems"};
+			 wchar_t *argv[] = {L"ArgTest", L"-fixFolderACL", L"-checkFolderACL", L"-checkItems"};
 			Assert::AreEqual<unsigned long>((new UserArgs())->ParseGetActions(4, argv), 0x7);
 		}
 		
 		// Run the triple FixFolderACL, CheckFolderACL, FixItems
 		TEST_METHOD(FixFolderACLCheckFolderACLFixItems)
 		{
-			const wchar_t *argv[] = {L"ArgTest", L"-fixFolderACL", L"-checkFolderACL", L"-fixItems"};
+			 wchar_t *argv[] = {L"ArgTest", L"-fixFolderACL", L"-checkFolderACL", L"-fixItems"};
 			Assert::AreEqual<unsigned long>((new UserArgs())->ParseGetActions(4, argv), 0xb);
 		}
 		
@@ -215,15 +215,15 @@ namespace UnitTests
 		// Run the triple CheckFolderACL, FixFolderACL, FixItems
 		TEST_METHOD(CheckFolderACLFixFolderACLFixItems)
 		{
-			const wchar_t *argv[] = {L"ArgTest", L"-checkFolderACL", L"-fixFolderACL", L"-fixItems"};
+			 wchar_t *argv[] = {L"ArgTest", L"-checkFolderACL", L"-fixFolderACL", L"-fixItems"};
 			Assert::AreEqual<unsigned long>((new UserArgs())->ParseGetActions(4, argv), 0xb);
 		}
 		
 		// Try all parameters, including help, and a folder
 		TEST_METHOD(EverythingFolderAndHelpMixedSlashes3)
 		{
-			const wchar_t *pwszMyFolder = L"MyPath\\MyFolder";
-			const wchar_t *argv[] = {L"ArgTest", L"/fixFolderACL", L"-checkItems", L"/fixItems", L"-?", L"-checkFolderACL", pwszMyFolder};
+			 wchar_t *pwszMyFolder = L"MyPath\\MyFolder";
+			 wchar_t *argv[] = {L"ArgTest", L"/fixFolderACL", L"-checkItems", L"/fixItems", L"-?", L"-checkFolderACL", pwszMyFolder};
 			UserArgs *pua = new UserArgs();
 			Assert::AreEqual<unsigned long>(pua->ParseGetActions(7, argv), 0x8000000F);
 			Assert::AreEqual(pwszMyFolder, pua->pstrPublicFolder()->c_str(), true);
@@ -233,8 +233,8 @@ namespace UnitTests
 		// Try all parameters, including help, and a folder
 		TEST_METHOD(EverythingFolderAndHelpMixedSlashes4)
 		{
-			const wchar_t *pwszMyFolder = L"MyPath\\MyFolder";
-			const wchar_t *argv[] = {L"ArgTest", L"-?", L"/fixFolderACL", L"-checkItems", L"/fixItems", L"-checkFolderACL", pwszMyFolder};
+			 wchar_t *pwszMyFolder = L"MyPath\\MyFolder";
+			 wchar_t *argv[] = {L"ArgTest", L"-?", L"/fixFolderACL", L"-checkItems", L"/fixItems", L"-checkFolderACL", pwszMyFolder};
 			UserArgs *pua = new UserArgs();
 			Assert::AreEqual<unsigned long>(pua->ParseGetActions(7, argv), 0x8000000F);
 			Assert::AreEqual(pwszMyFolder, pua->pstrPublicFolder()->c_str(), true);
@@ -244,8 +244,8 @@ namespace UnitTests
 		// Try all parameters, including help, and a folder
 		TEST_METHOD(EverythingFolderAndHelpMixedSlashes4NewPath)
 		{
-			const wchar_t *pwszMyFolder = L"\\MyPath\\MyFolder";
-			const wchar_t *argv[] = {L"ArgTest", L"-?", L"/fixFolderACL", L"-checkItems", L"/fixItems", L"-checkFolderACL", pwszMyFolder};
+			 wchar_t *pwszMyFolder = L"\\MyPath\\MyFolder";
+			 wchar_t *argv[] = {L"ArgTest", L"-?", L"/fixFolderACL", L"-checkItems", L"/fixItems", L"-checkFolderACL", pwszMyFolder};
 			UserArgs *pua = new UserArgs();
 			Assert::AreEqual<unsigned long>(pua->ParseGetActions(7, argv), 0x8000000F);
 			Assert::AreEqual(pwszMyFolder, pua->pstrPublicFolder()->c_str(), true);
@@ -255,8 +255,8 @@ namespace UnitTests
 		// Try all parameters, including help, and a folder
 		TEST_METHOD(BadPrams1)
 		{
-			const wchar_t *pwszMyFolder = L"\\MyPath\\MyFolder";
-			const wchar_t *argv[] = {L"ArgTest", L"-?", L"/fixFolderACLBAD", L"-checkItems", L"/fixItems", L"-checkFolderACL", pwszMyFolder};
+			 wchar_t *pwszMyFolder = L"\\MyPath\\MyFolder";
+			 wchar_t *argv[] = {L"ArgTest", L"-?", L"/fixFolderACLBAD", L"-checkItems", L"/fixItems", L"-checkFolderACL", pwszMyFolder};
 			UserArgs *pua = new UserArgs();
 			Assert::AreEqual(pua->Parse(7, argv), false);
 			delete pua;
@@ -264,8 +264,8 @@ namespace UnitTests
 
 		TEST_METHOD(BadPrams2)
 		{
-			const wchar_t *pwszMyFolder = L"\\MyPath\\MyFolder";
-			const wchar_t *argv[] = {L"ArgTest", L"-?", L"/fixFolderACL", L"-BADcheckItems", L"/fixItems", L"-checkFolderACL", pwszMyFolder};
+			 wchar_t *pwszMyFolder = L"\\MyPath\\MyFolder";
+			 wchar_t *argv[] = {L"ArgTest", L"-?", L"/fixFolderACL", L"-BADcheckItems", L"/fixItems", L"-checkFolderACL", pwszMyFolder};
 			UserArgs *pua = new UserArgs();
 			Assert::AreEqual(pua->Parse(7, argv), false);
 			delete pua;
@@ -273,8 +273,8 @@ namespace UnitTests
 
 		TEST_METHOD(MultipleFolders)
 		{
-			const wchar_t *pwszMyFolder = L"\\MyPath\\MyFolder";
-			const wchar_t *argv[] = {L"ArgTest", pwszMyFolder, L"-?", L"/fixFolderACL", L"-checkItems", L"/fixItems", L"-checkFolderACL", pwszMyFolder};
+			 wchar_t *pwszMyFolder = L"\\MyPath\\MyFolder";
+			 wchar_t *argv[] = {L"ArgTest", pwszMyFolder, L"-?", L"/fixFolderACL", L"-checkItems", L"/fixItems", L"-checkFolderACL", pwszMyFolder};
 			UserArgs *pua = new UserArgs();
 			Assert::AreEqual(pua->Parse(8, argv), false);
 			delete pua;
@@ -282,10 +282,10 @@ namespace UnitTests
 
 		TEST_METHOD(RunTwiceWithFolders)
 		{
-			const wchar_t *pwszMyFolder1 = L"\\MyPath\\MyFolder";
-			const wchar_t *pwszMyFolder2 = L"\\MyPath\\MyFolder2";
-			const wchar_t *argv[] = {L"ArgTest", L"-?", L"/fixFolderACL", L"-checkItems", L"/fixItems", L"-checkFolderACL", pwszMyFolder1};
-			const wchar_t *argv2[] = {L"ArgTest", L"-?", pwszMyFolder2, L"/fixFolderACL", L"-checkItems", L"/fixItems", L"-checkFolderACL"};
+			 wchar_t *pwszMyFolder1 = L"\\MyPath\\MyFolder";
+			 wchar_t *pwszMyFolder2 = L"\\MyPath\\MyFolder2";
+			 wchar_t *argv[] = {L"ArgTest", L"-?", L"/fixFolderACL", L"-checkItems", L"/fixItems", L"-checkFolderACL", pwszMyFolder1};
+			 wchar_t *argv2[] = {L"ArgTest", L"-?", pwszMyFolder2, L"/fixFolderACL", L"-checkItems", L"/fixItems", L"-checkFolderACL"};
 			UserArgs *pua = new UserArgs();
 			pua->Parse(7, argv);
 			pua->Parse(7,argv2);
@@ -295,8 +295,8 @@ namespace UnitTests
 
 		TEST_METHOD(ScopeBaseWithColon)
 		{
-			const wchar_t *pwszMyFolder = L"\\MyPath\\MyFolder";
-			const wchar_t *argv[] = {L"ArgTest", L"-?", L"/fixFolderACL", L"-checkItems", L"-scope:Base", L"/fixItems", L"-checkFolderACL", pwszMyFolder};
+			 wchar_t *pwszMyFolder = L"\\MyPath\\MyFolder";
+			 wchar_t *argv[] = {L"ArgTest", L"-?", L"/fixFolderACL", L"-checkItems", L"-scope:Base", L"/fixItems", L"-checkFolderACL", pwszMyFolder};
 			UserArgs ua; //*pua = new UserArgs();
 			unsigned long retVal = ua.ParseGetActions(8, argv);
 			unsigned long ulReturnedScope = (unsigned long)(ua.nScope()); 
@@ -306,8 +306,8 @@ namespace UnitTests
 
 		TEST_METHOD(ScopeBaseWithSpace)
 		{
-			const wchar_t *pwszMyFolder = L"\\MyPath\\MyFolder";
-			const wchar_t *argv[] = {L"ArgTest", L"-?", L"/fixFolderACL", L"-checkItems", L"-scope", L"Base", L"/fixItems", L"-checkFolderACL", pwszMyFolder};
+			 wchar_t *pwszMyFolder = L"\\MyPath\\MyFolder";
+			 wchar_t *argv[] = {L"ArgTest", L"-?", L"/fixFolderACL", L"-checkItems", L"-scope", L"Base", L"/fixItems", L"-checkFolderACL", pwszMyFolder};
 			UserArgs ua; //*pua = new UserArgs();
 			unsigned long retVal = ua.ParseGetActions(8, argv);
 			unsigned long ulReturnedScope = (unsigned long)(ua.nScope()); 
@@ -319,8 +319,8 @@ namespace UnitTests
 
 		TEST_METHOD(ScopeSubtreeWithColon)
 		{
-			const wchar_t *pwszMyFolder = L"\\MyPath\\MyFolder";
-			const wchar_t *argv[] = {L"ArgTest", L"-?", L"/fixFolderACL", L"-checkItems", L"-scope:Subtree", L"/fixItems", L"-checkFolderACL", pwszMyFolder};
+			 wchar_t *pwszMyFolder = L"\\MyPath\\MyFolder";
+			 wchar_t *argv[] = {L"ArgTest", L"-?", L"/fixFolderACL", L"-checkItems", L"-scope:Subtree", L"/fixItems", L"-checkFolderACL", pwszMyFolder};
 			UserArgs ua; //*pua = new UserArgs();
 			unsigned long retVal = ua.ParseGetActions(8, argv);
 			unsigned long ulReturnedScope = (unsigned long)(ua.nScope()); 
@@ -330,8 +330,8 @@ namespace UnitTests
 
 		TEST_METHOD(ScopeMissingWithColonBad)
 		{
-			const wchar_t *pwszMyFolder = L"\\MyPath\\MyFolder";
-			const wchar_t *argv[] = {L"ArgTest", L"-?", L"/fixFolderACL", L"-checkItems", L"-scope:", L"/fixItems", L"-checkFolderACL", pwszMyFolder};
+			 wchar_t *pwszMyFolder = L"\\MyPath\\MyFolder";
+			 wchar_t *argv[] = {L"ArgTest", L"-?", L"/fixFolderACL", L"-checkItems", L"-scope:", L"/fixItems", L"-checkFolderACL", pwszMyFolder};
 			UserArgs ua; //*pua = new UserArgs();
 			bool retVal = ua.Parse(8, argv);
 			unsigned long ulReturnedScope = (unsigned long)(ua.nScope()); 
@@ -341,8 +341,8 @@ namespace UnitTests
 
 		TEST_METHOD(ScopeMissingWithColonAtEnd)
 		{
-			const wchar_t *pwszMyFolder = L"\\MyPath\\MyFolder";
-			const wchar_t *argv[] = {L"ArgTest", L"-?", L"/fixFolderACL", L"-checkItems", L"/fixItems", L"-checkFolderACL", pwszMyFolder, L"-scope:"};
+			 wchar_t *pwszMyFolder = L"\\MyPath\\MyFolder";
+			 wchar_t *argv[] = {L"ArgTest", L"-?", L"/fixFolderACL", L"-checkItems", L"/fixItems", L"-checkFolderACL", pwszMyFolder, L"-scope:"};
 			UserArgs ua; //*pua = new UserArgs();
 			bool retVal = ua.Parse(8, argv);
 			unsigned long ulReturnedScope = (unsigned long)(ua.nScope()); 
@@ -352,8 +352,8 @@ namespace UnitTests
 
 		TEST_METHOD(ScopeWithColonFixFolderACL)
 		{
-			const wchar_t *pwszMyFolder = L"\\MyPath\\MyFolder";
-			const wchar_t *argv[] = {L"ArgTest", L"/fixFolderACL", L"-scope:OneLevel"};
+			 wchar_t *pwszMyFolder = L"\\MyPath\\MyFolder";
+			 wchar_t *argv[] = {L"ArgTest", L"/fixFolderACL", L"-scope:OneLevel"};
 			UserArgs ua; //*pua = new UserArgs();
 			unsigned long retVal = ua.ParseGetActions(3, argv);
 			unsigned long ulReturnedScope = (unsigned long)(ua.nScope()); 
@@ -363,8 +363,8 @@ namespace UnitTests
 
 		TEST_METHOD(ScopeWithSpaceFixFolderACL)
 		{
-			const wchar_t *pwszMyFolder = L"\\MyPath\\MyFolder";
-			const wchar_t *argv[] = {L"ArgTest", L"/fixFolderACL", L"-scope", L"OneLevel"};
+			 wchar_t *pwszMyFolder = L"\\MyPath\\MyFolder";
+			 wchar_t *argv[] = {L"ArgTest", L"/fixFolderACL", L"-scope", L"OneLevel"};
 
 			UserArgs ua; //*pua = new UserArgs();
 			unsigned long retVal = ua.ParseGetActions(4, argv);
@@ -376,8 +376,8 @@ namespace UnitTests
 
 		TEST_METHOD(ScopeBadWithColonFixFolderACL)
 		{
-			const wchar_t *pwszMyFolder = L"\\MyPath\\MyFolder";
-			const wchar_t *argv[] = {L"ArgTest", L"/fixFolderACL", L"-scope:OneLevelBad"};
+			 wchar_t *pwszMyFolder = L"\\MyPath\\MyFolder";
+			 wchar_t *argv[] = {L"ArgTest", L"/fixFolderACL", L"-scope:OneLevelBad"};
 
 			UserArgs ua;
 			bool retVal = ua.Parse(3, argv);
@@ -387,8 +387,8 @@ namespace UnitTests
 
 		TEST_METHOD(ScopeBadWithSpaceFixFolderACL)
 		{
-			const wchar_t *pwszMyFolder = L"\\MyPath\\MyFolder";
-			const wchar_t *argv[] = {L"ArgTest", L"/fixFolderACL", L"-scope", L"NoneBad"};
+			 wchar_t *pwszMyFolder = L"\\MyPath\\MyFolder";
+			 wchar_t *argv[] = {L"ArgTest", L"/fixFolderACL", L"-scope", L"NoneBad"};
 
 			UserArgs ua; //*pua = new UserArgs();
 			bool retVal = ua.Parse(4, argv);
@@ -398,8 +398,8 @@ namespace UnitTests
 
 		TEST_METHOD(ScopeMissingWithSpaceAtEnd)
 		{
-			const wchar_t *pwszMyFolder = L"\\MyPath\\MyFolder";
-			const wchar_t *argv[] = {L"ArgTest", L"-?", L"/fixFolderACL", L"-checkItems", L"/fixItems", L"-checkFolderACL", pwszMyFolder, L"-scope"};
+			 wchar_t *pwszMyFolder = L"\\MyPath\\MyFolder";
+			 wchar_t *argv[] = {L"ArgTest", L"-?", L"/fixFolderACL", L"-checkItems", L"/fixItems", L"-checkFolderACL", pwszMyFolder, L"-scope"};
 			UserArgs ua; //*pua = new UserArgs();
 			bool retVal = ua.Parse(8, argv);
 			unsigned long ulReturnedScope = (unsigned long)(ua.nScope()); 
@@ -409,8 +409,8 @@ namespace UnitTests
 
 		TEST_METHOD(ScopeMissingWithSpaceAtEndNoOtherArgs)
 		{
-			const wchar_t *pwszMyFolder = L"\\MyPath\\MyFolder";
-			const wchar_t *argv[] = {L"ArgTest", L"-scope"};
+			 wchar_t *pwszMyFolder = L"\\MyPath\\MyFolder";
+			 wchar_t *argv[] = {L"ArgTest", L"-scope"};
 			UserArgs ua; //*pua = new UserArgs();
 			bool retVal = ua.Parse(2, argv);
 			unsigned long ulReturnedScope = (unsigned long)(ua.nScope()); 

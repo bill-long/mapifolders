@@ -79,7 +79,7 @@ void UserArgs::logError(int argNum, const wchar_t *strArg, unsigned long err)
 	}
 }
 
-bool UserArgs::Parse(int argc, const wchar_t* argv[])
+bool UserArgs::Parse(int argc, wchar_t* argv[])
 {
 	init();	// Reset from any previous run
 	int iCurrentArg=1, iCurrChar=0; // indexes of current arg and character withing argv[iCurrentArg]
@@ -242,7 +242,7 @@ bool UserArgs::Parse(int argc, const wchar_t* argv[])
 }
 
 // Parses arguments and returns the _actions code
-unsigned long UserArgs::ParseGetActions(int argc, const wchar_t *argv[])
+unsigned long UserArgs::ParseGetActions(int argc, wchar_t *argv[])
 {
 	bool result = Parse(argc, argv);
 	if(result)
