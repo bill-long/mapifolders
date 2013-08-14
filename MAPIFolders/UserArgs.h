@@ -1,8 +1,12 @@
 #pragma once
 #include <string>
+#include <iostream>
+#include <tchar.h>
 
 #define _COUNTOFACCEPTEDSWITCHES (6)
 #define _COUNTOFSCOPES (3)
+
+typedef std::basic_string<TCHAR> tstring;
 
 // Internal structure for accepted switches
 
@@ -14,14 +18,14 @@ public:
 
 	// Action accessor methods; use these to determine user selected actions after parsing
 	// Update this list to add actions to the application
-	bool fCheckFolderAcl() {return (NULL!=(_actions & CHECKFOLDERACLS));}
-	bool fFixFolderAcl() {return (NULL!=(_actions & FIXFOLDERACLS));}
-	bool fCheckItems() {return (NULL!=(_actions & CHECKITEMS));}
-	bool fFixItems() {return (NULL!=(_actions & FIXITEMS));}
-	bool fDisplayHelp() {return (NULL!=(_actions & DISPLAYHELP));}
+	bool fCheckFolderAcl() {return (NULL!=(m_actions & CHECKFOLDERACLS));}
+	bool fFixFolderAcl() {return (NULL!=(m_actions & FIXFOLDERACLS));}
+	bool fCheckItems() {return (NULL!=(m_actions & CHECKITEMS));}
+	bool fFixItems() {return (NULL!=(m_actions & FIXITEMS));}
+	bool fDisplayHelp() {return (NULL!=(m_actions & DISPLAYHELP));}
 
-	// Argument value accessor methods
-	std::wstring *pstrPublicFolder() {return _pstrPublicFolder;}
+	// Argument value (i.e. public folder, the only value argument) accessor methods
+	tstring *pstrPublicFolder() {return m_pstrPublicFolder;}
 
 	// Enum for the possible scopes for operations
 	enum ActionScope : short int
@@ -32,21 +36,24 @@ public:
 		SUBTREE
 	};
 
-	// Get the parsed scope
-	ActionScope nScope() {return _scope;}
+	// Access the parsed scope
+	ActionScope nScope() {return m_scope;}
 
 	// Parse the command line and return whether successful
-	bool Parse(int argc,  wchar_t *argv[]);
+	bool Parse(int argc,  TCHAR *argv[]);
 
 	// Parse the command line and return the actions selected as a code; for testing; throws exception on error
-	unsigned long ParseGetActions(int argc, wchar_t  *argv[]);
+	unsigned long ParseGetActions(int argc, TCHAR  *argv[]);
+
+	// Display syntax help
+	void ShowHelp(TCHAR *lptMessage=NULL);
 
 private:
 	// Structure to hold acceptable arguments for parsing
 	struct ArgSwitch
 	{
-		wchar_t* pszSwitch;	// actual switch text
-		wchar_t* pszDescription;	// description of switch
+		TCHAR* pszSwitch;	// actual switch text
+		TCHAR* pszDescription;	// description of switch
 		bool fHasValue;	// whether is expects a switch value
 		unsigned long flagAction;	// The flag for this action
 	};
@@ -55,7 +62,7 @@ private:
 	struct ScopeValue
 	{
 		UserArgs::ActionScope nScopeCode;
-		wchar_t* pszScope;
+		TCHAR* pszScope;
 	};
 
 	// Internal state enum used in Parse()
@@ -72,7 +79,7 @@ private:
 	};
 
 	// Action to be populated when parsing; accessed indirectly via fXxx() methods
-	unsigned long _actions;
+	unsigned long m_actions;
 
 	// Flags for actions; these are private, accessed indirectly through accessor methods below
 	// Update this list to add actions (i.e. switches) to the application
@@ -91,15 +98,15 @@ private:
 	static const unsigned long ERR_INVALIDSTATE=1<<3;
 
 	// public folder, scope of action
-	std::wstring *_pstrPublicFolder;
-	ActionScope _scope;
+	tstring *m_pstrPublicFolder;
+	ActionScope m_scope;
 	
 
 	// An array of switch structures defining the acceptable switches
 	static const ArgSwitch rgArgSwitches[_COUNTOFACCEPTEDSWITCHES];
 	
 	// A string of characters we accept as switch escapes; typically "-/"
-	static const std::wstring _wstrSwitchChars;	
+	static const tstring *m_pstrSwitchChars;	
 
 	// An array of Scope structures defining acceptable scopes
 	static const ScopeValue rgScopeValues[_COUNTOFSCOPES];
@@ -108,7 +115,10 @@ private:
 	void init();
 
 	// Log an error about an argument
-	void logError(int iArg, const wchar_t *arg, unsigned long err);
+	void logError(int iArg, const TCHAR *arg, unsigned long err);
+
+	// Validate the parsed parameters
+	bool validate();
 
 };
 

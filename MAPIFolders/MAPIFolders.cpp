@@ -22,15 +22,22 @@ int _tmain(int argc, _TCHAR* argv[])
 		std::cout << "fFixItems: " << ua.fFixItems() << std::endl;
 #endif
 
-		if(ua.fCheckFolderAcl())
+		if(ua.fDisplayHelp())
 		{
-			ValidateFolderACL *checkACLOp = new ValidateFolderACL(false);
-			OperationBase *op = checkACLOp;
-			op->DoOperation();
+			ua.ShowHelp();
 		}
 		else
 		{
-			std::cerr << "unimplemented feature." << std::endl;
+			if(ua.fCheckFolderAcl())
+			{
+				ValidateFolderACL *checkACLOp = new ValidateFolderACL(false);
+				OperationBase *op = checkACLOp;
+				op->DoOperation();
+			}
+			if(ua.fCheckItems() || ua.fFixFolderAcl() || ua.fFixItems())
+			{
+				std::cerr << "unimplemented feature." << std::endl;
+			}
 		}
 	}
 
@@ -38,6 +45,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	{
 		// Parsing error
 		std::cerr << "Error parsing command line." << std::endl;
+		ua.ShowHelp();
 	}
 
 }

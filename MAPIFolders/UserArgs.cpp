@@ -7,83 +7,91 @@
 //Update this if new actions are added as well as #define _COUNTOFACCEPTEDSWITCHES
 const UserArgs::ArgSwitch UserArgs::rgArgSwitches[_COUNTOFACCEPTEDSWITCHES] = 
 {
-	{L"CheckFolderACL", L"Check Folder ACL", false, CHECKFOLDERACLS},
-	{L"FixFolderACL", L"Fix Folder ACL", false, FIXFOLDERACLS},
-	{L"CheckItems", L"Check Items", false, CHECKITEMS},
-	{L"FixItems", L"Fix Items", false, FIXITEMS},
-	{L"Scope", L"Action Scope", true, SCOPE},
-	{L"?", L"Help", false, DISPLAYHELP},
+	{_T("CheckFolderACL"), _T("Check Folder ACL"), false, CHECKFOLDERACLS},
+	{_T("FixFolderACL"), _T("Fix Folder ACL"), false, FIXFOLDERACLS},
+	{_T("CheckItems"), _T("Check Items"), false, CHECKITEMS},
+	{_T("FixItems"), _T("Fix Items"), false, FIXITEMS},
+	{_T("Scope"), _T("Action Scope"), true, SCOPE},
+	{_T("?"), _T("Help"), false, DISPLAYHELP},
 };
 
 // The array of scopes
 const UserArgs::ScopeValue UserArgs::rgScopeValues[_COUNTOFSCOPES] =
 {
-	{UserArgs::ActionScope::BASE, L"Base"},
-	{UserArgs::ActionScope::ONELEVEL, L"OneLevel"},
-	{UserArgs::ActionScope::SUBTREE, L"SubTree"},
+	{UserArgs::ActionScope::BASE, _T("Base")},
+	{UserArgs::ActionScope::ONELEVEL, _T("OneLevel")},
+	{UserArgs::ActionScope::SUBTREE, _T("SubTree")},
 };
 
-//The string of characters to accept as switches
-const std::wstring UserArgs::_wstrSwitchChars = std::wstring(L"-/");
+//The string of characters to accept as switches; 
+const tstring *UserArgs::m_pstrSwitchChars = new tstring(_T("-/"));
 
 
 UserArgs::~UserArgs(void)
 {
-	if(_pstrPublicFolder)
+	if(m_pstrPublicFolder)
 	{
-		delete _pstrPublicFolder;
-		_pstrPublicFolder=NULL;
+		delete m_pstrPublicFolder;
+		m_pstrPublicFolder=NULL;
 	}
 }
 
 UserArgs::UserArgs(void)
 {
 	// Initialize _pstrPublicFolder as it is a pointer
-	 _pstrPublicFolder=NULL;
+	 m_pstrPublicFolder=NULL;
 	// Default _actions
 	init();
 }
 
 void UserArgs::init(void)
 {
-	 _actions=0;
-	 if(_pstrPublicFolder!=NULL)
-		 delete _pstrPublicFolder;
-	 _pstrPublicFolder=NULL;
-	 _scope = ActionScope::NONE;
+	 m_actions=0;
+	 if(m_pstrPublicFolder!=NULL)
+		 delete m_pstrPublicFolder;
+	 m_pstrPublicFolder=NULL;
+	 m_scope = ActionScope::NONE;
 }
 
 // Error logging
-void UserArgs::logError(int argNum, const wchar_t *strArg, unsigned long err)
+void UserArgs::logError(int argNum, const TCHAR *strArg, unsigned long err)
 {
 	wprintf(L"Error parsing argument %d ('%s').\n", argNum, strArg);
 	switch(err)
 	{
 		case ERR_NONE:
-			wprintf(L"Success\n");	// Should not log success error
+			_tprintf(_T("Success\n"));	// Should not log success error
 			break;
 		case ERR_INVALIDSWITCH:
-			wprintf(L"Invalid switch\n");	// Should not log success error
+			_tprintf(_T("Invalid switch\n"));	// Should not log success error
 			break;
 		case ERR_DUPLICATEFOLDER:
-			wprintf(L"Folder already specified\n");	// Should not log success error
+			_tprintf(_T("Folder already specified\n"));	// Should not log success error
 			break;
 		case ERR_EXPECTEDSWITCHVALUE:
-			wprintf(L"Expected a value\n");
+			_tprintf(_T("Expected a value\n"));
 			break;
 		case ERR_INVALIDSTATE:
-			wprintf(L"Unexpected state during parsing\n");
+			_tprintf(_T("Unexpected state during parsing\n"));
 			break;
 		default:
-			wprintf(L"Unknown error logged\n");
+			_tprintf(_T("Unknown error logged\n"));
 	}
 }
 
-bool UserArgs::Parse(int argc, wchar_t* argv[])
+// Show syntax help
+void UserArgs::ShowHelp(TCHAR *msg)
+{
+	if(msg)
+		std::cout << msg << std::endl;
+	std::cout << "MAPIFolders [-?] [-CheckFolderACL] [-FixFolderACL] [-CheckItems] [-FixItems] [-Scope:Base|OneLevel|SubTree] [folderName]" << std::endl;
+}
+
+bool UserArgs::Parse(int argc, TCHAR* argv[])
 {
 	init();	// Reset from any previous run
 	int iCurrentArg=1, iCurrChar=0; // indexes of current arg and character withing argv[iCurrentArg]
-	const wchar_t *pchCurrent = NULL;	// Pointer to the current character in argv[iCurrentArg]
+	const TCHAR *pchCurrent = NULL;	// Pointer to the current character in argv[iCurrentArg]
 
 	bool retVal = false;
 	
@@ -104,7 +112,7 @@ bool UserArgs::Parse(int argc, wchar_t* argv[])
 				/* See if current character is an accepted switch character
 				(e.g. '-' or '/'); if so, advance a character and set state to 
 				SWITCH; else do not advance but set state to VALUE */
-				if(std::string::npos != _wstrSwitchChars.find(pchCurrent[0]))
+				if(tstring::npos != m_pstrSwitchChars->find(pchCurrent[0]))
 				{
 					iCurrChar++;	// could be '\0' here
 					state=STATE_SWITCH;
@@ -120,11 +128,11 @@ bool UserArgs::Parse(int argc, wchar_t* argv[])
 					if(!rgArgSwitches[i].fHasValue)
 					{
 						// Search for an exact match for non-value (i.e. simple) switches
-						if(0==_wcsnicmp(pchCurrent, rgArgSwitches[i].pszSwitch, FILENAME_MAX))	// arbitrary max length
+						if(0==_tcsnicmp(pchCurrent, rgArgSwitches[i].pszSwitch, FILENAME_MAX))	// arbitrary max length
 						{
 							// matched a switch
 							// Add to actions
-							_actions |= rgArgSwitches[i].flagAction;
+							m_actions |= rgArgSwitches[i].flagAction;
 							foundSimpleSwitch=true;
 							break;
 						} // if (0==_wcsnicmp(pchCurrent, rgArgSwitches[i].pszSwitch, ...
@@ -133,14 +141,14 @@ bool UserArgs::Parse(int argc, wchar_t* argv[])
 					{
 						// Then this is a value switch
 						// Set iCurrChar character after switch's name (will be '\0' or ':' else fail), set ulCurrentSwitch, set state to find value
-						size_t nSwitchLength = wcsnlen(rgArgSwitches[i].pszSwitch, FILENAME_MAX);
-						size_t nCurrentSubstrLength = wcsnlen(pchCurrent, FILENAME_MAX);
-						if(0==_wcsnicmp(pchCurrent, 
+						size_t nSwitchLength = _tcsnlen(rgArgSwitches[i].pszSwitch, FILENAME_MAX);
+						size_t nCurrentSubstrLength = _tcsnlen(pchCurrent, FILENAME_MAX);
+						if(0==_tcsnicmp(pchCurrent, 
 							rgArgSwitches[i].pszSwitch, 
 							nSwitchLength)) // See if pchCurrent starts with this accepted value switch
 						{
 							// Found a matching valueswitch
-							_actions |= rgArgSwitches[i].flagAction; // Though this is not an *action*, _actions are to verify accepted options
+							m_actions |= rgArgSwitches[i].flagAction; // Though this is not an *action*, _actions are to verify accepted options
 							ulCurrentValueSwitch = rgArgSwitches[i].flagAction;
 							foundValueSwitch=true;
 							if(pchCurrent[nSwitchLength]==L':')
@@ -180,9 +188,9 @@ bool UserArgs::Parse(int argc, wchar_t* argv[])
 						foundScope=false;
 						for(int i=0; i<_COUNTOFSCOPES && !foundScope; i++)
 						{
-							if(0==_wcsnicmp(pchCurrent, rgScopeValues[i].pszScope, FILENAME_MAX))
+							if(0==_tcsnicmp(pchCurrent, rgScopeValues[i].pszScope, FILENAME_MAX))
 							{
-								this->_scope= rgScopeValues[i].nScopeCode;
+								this->m_scope= rgScopeValues[i].nScopeCode;
 								foundScope=true;
 							}
 						}
@@ -202,8 +210,7 @@ bool UserArgs::Parse(int argc, wchar_t* argv[])
 				}
 				break;
 			case STATE_VALUE:
-				// TODO: accept a value, set state to ADVANCEARG
-				if(_pstrPublicFolder!=NULL)
+				if(m_pstrPublicFolder!=NULL)
 				{
 					// Not allowing multiple values
 					logError(iCurrentArg, argv[iCurrentArg], ERR_DUPLICATEFOLDER);
@@ -211,7 +218,12 @@ bool UserArgs::Parse(int argc, wchar_t* argv[])
 				}
 				else
 				{
-					_pstrPublicFolder = new std::wstring(pchCurrent);
+					if(m_pstrPublicFolder)
+					{
+						delete m_pstrPublicFolder;
+						m_pstrPublicFolder=NULL;
+					}
+					m_pstrPublicFolder = new tstring(pchCurrent);
 					state=STATE_ADVANCEARG;
 				}
 				break;
@@ -242,11 +254,22 @@ bool UserArgs::Parse(int argc, wchar_t* argv[])
 }
 
 // Parses arguments and returns the _actions code
-unsigned long UserArgs::ParseGetActions(int argc, wchar_t *argv[])
+unsigned long UserArgs::ParseGetActions(int argc, TCHAR *argv[])
 {
 	bool result = Parse(argc, argv);
 	if(result)
-		return _actions;
+		return m_actions;
 	else
 		throw new std::exception; //was return NULL; 
+}
+
+// Validate the parsed parameters
+bool UserArgs::validate()
+{
+	bool retVal = false;
+
+	// Verify the parsed parameters meet all the rules
+	retVal = true;
+
+	return retVal;
 }
