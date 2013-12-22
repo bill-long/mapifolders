@@ -159,7 +159,7 @@ LPMAPIFOLDER OperationBase::GetPFRoot(IMAPISession *pSession)
 			PR_HIERARCHY_SERVER,
 			&lpServerName));
 
-	std::cout << "Using public folder server/mailbox: " << lpServerName->Value.lpszA << std::endl;
+	std::wcout << "Using public folder server/mailbox: " << lpServerName->Value.lpszA << std::endl;
 
 	CORg(BuildServerDN(
 				(LPCTSTR)lpServerName->Value.lpszA,

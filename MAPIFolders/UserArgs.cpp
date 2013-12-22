@@ -29,17 +29,17 @@ const tstring *UserArgs::m_pstrSwitchChars = new tstring(_T("-/"));
 
 UserArgs::~UserArgs(void)
 {
-	if(m_pstrPublicFolder)
+	if(m_pstrFolderPath)
 	{
-		delete m_pstrPublicFolder;
-		m_pstrPublicFolder=NULL;
+		delete m_pstrFolderPath;
+		m_pstrFolderPath=NULL;
 	}
 }
 
 UserArgs::UserArgs(void)
 {
 	// Initialize _pstrPublicFolder as it is a pointer
-	 m_pstrPublicFolder=NULL;
+	 m_pstrFolderPath=NULL;
 	// Default _actions
 	init();
 }
@@ -47,9 +47,9 @@ UserArgs::UserArgs(void)
 void UserArgs::init(void)
 {
 	 m_actions=0;
-	 if(m_pstrPublicFolder!=NULL)
-		 delete m_pstrPublicFolder;
-	 m_pstrPublicFolder=NULL;
+	 if(m_pstrFolderPath!=NULL)
+		 delete m_pstrFolderPath;
+	 m_pstrFolderPath=NULL;
 	 m_scope = ActionScope::NONE;
 }
 
@@ -83,8 +83,8 @@ void UserArgs::logError(int argNum, const TCHAR *strArg, unsigned long err)
 void UserArgs::ShowHelp(TCHAR *msg)
 {
 	if(msg)
-		std::cout << msg << std::endl;
-	std::cout << "MAPIFolders [-?] [-CheckFolderACL] [-FixFolderACL] [-CheckItems] [-FixItems] [-Scope:Base|OneLevel|SubTree] [folderName]" << std::endl;
+		std::wcout << msg << std::endl;
+	std::wcout << "MAPIFolders [-?] [-CheckFolderACL] [-FixFolderACL] [-CheckItems] [-FixItems] [-Scope:Base|OneLevel|SubTree] [folderName]" << std::endl;
 }
 
 bool UserArgs::Parse(int argc, TCHAR* argv[])
@@ -210,7 +210,7 @@ bool UserArgs::Parse(int argc, TCHAR* argv[])
 				}
 				break;
 			case STATE_VALUE:
-				if(m_pstrPublicFolder!=NULL)
+				if(m_pstrFolderPath!=NULL)
 				{
 					// Not allowing multiple values
 					logError(iCurrentArg, argv[iCurrentArg], ERR_DUPLICATEFOLDER);
@@ -218,12 +218,12 @@ bool UserArgs::Parse(int argc, TCHAR* argv[])
 				}
 				else
 				{
-					if(m_pstrPublicFolder)
+					if(m_pstrFolderPath)
 					{
-						delete m_pstrPublicFolder;
-						m_pstrPublicFolder=NULL;
+						delete m_pstrFolderPath;
+						m_pstrFolderPath=NULL;
 					}
-					m_pstrPublicFolder = new tstring(pchCurrent);
+					m_pstrFolderPath = new tstring(pchCurrent);
 					state=STATE_ADVANCEARG;
 				}
 				break;

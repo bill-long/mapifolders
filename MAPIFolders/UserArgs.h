@@ -25,7 +25,7 @@ public:
 	bool fDisplayHelp() {return (NULL!=(m_actions & DISPLAYHELP));}
 
 	// Argument value (i.e. public folder, the only value argument) accessor methods
-	tstring *pstrPublicFolder() {return m_pstrPublicFolder;}
+	tstring *pstrFolderPath() {return m_pstrFolderPath;}
 
 	// Enum for the possible scopes for operations
 	enum ActionScope : short int
@@ -98,7 +98,7 @@ private:
 	static const unsigned long ERR_INVALIDSTATE=1<<3;
 
 	// public folder, scope of action
-	tstring *m_pstrPublicFolder;
+	tstring *m_pstrFolderPath;
 	ActionScope m_scope;
 	
 

@@ -14,12 +14,14 @@ int _tmain(int argc, _TCHAR* argv[])
 
 #ifdef DEBUG
 		// Dump parsed args
-		std::cout << "Parsed successfully.";
-		std::cout << "fCheckFolderAcl: " << ua.fCheckFolderAcl() << std::endl;
-		std::cout << "fCheckItems: " << ua.fCheckItems() << std::endl;
-		std::cout << "fDisplayHelp: " << ua.fDisplayHelp() << std::endl;
-		std::cout << "fFixFolderAcl: " << ua.fFixFolderAcl() << std::endl;
-		std::cout << "fFixItems: " << ua.fFixItems() << std::endl;
+		std::wcout << "Parsed successfully." << std::endl;
+		std::wcout << "fCheckFolderAcl: " << ua.fCheckFolderAcl() << std::endl;
+		std::wcout << "fCheckItems: " << ua.fCheckItems() << std::endl;
+		std::wcout << "fDisplayHelp: " << ua.fDisplayHelp() << std::endl;
+		std::wcout << "fFixFolderAcl: " << ua.fFixFolderAcl() << std::endl;
+		std::wcout << "fFixItems: " << ua.fFixItems() << std::endl;
+		std::wcout << "nScope: " << ua.nScope() << std::endl;
+		std::wcout << "pstrFolderPath: " << ua.pstrFolderPath()->c_str() << std::endl;
 #endif
 
 		if(ua.fDisplayHelp())
