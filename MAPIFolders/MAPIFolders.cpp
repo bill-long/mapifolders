@@ -21,7 +21,11 @@ int _tmain(int argc, _TCHAR* argv[])
 		std::wcout << "fFixFolderAcl: " << ua.fFixFolderAcl() << std::endl;
 		std::wcout << "fFixItems: " << ua.fFixItems() << std::endl;
 		std::wcout << "nScope: " << ua.nScope() << std::endl;
-		std::wcout << "pstrFolderPath: " << ua.pstrFolderPath()->c_str() << std::endl;
+		std::wcout << "pstrFolderPath: ";
+		if (ua.pstrFolderPath())
+			std::wcout << ua.pstrFolderPath()->c_str() << std::endl;
+		else
+			std::wcout << "Null" << std::endl;
 #endif
 
 		if(ua.fDisplayHelp())
