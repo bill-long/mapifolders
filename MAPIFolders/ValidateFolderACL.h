@@ -7,7 +7,7 @@ class ValidateFolderACL :
 	public OperationBase
 {
 public:
-	ValidateFolderACL(bool fixBadACLs);
+	ValidateFolderACL(tstring *pstrBasePath, UserArgs::ActionScope nScope, bool fixBadACLs);
 	~ValidateFolderACL(void);
 	void ProcessFolder(LPMAPIFOLDER folder, std::wstring folderPath);
 

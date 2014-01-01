@@ -15,10 +15,14 @@
 #include <edkmdb.h>
 #include <strsafe.h>
 
+#include "UserArgs.h"
+
+#define MDB_ONLINE 0x100
+
 class OperationBase
 {
 public:
-	OperationBase();
+	OperationBase(tstring *basePath, UserArgs::ActionScope scope);
 	~OperationBase(void);
 	void DoOperation();
 	virtual void ProcessFolder(LPMAPIFOLDER folder, std::wstring folderPath);
@@ -31,5 +35,7 @@ private:
 	LPMAPIFOLDER lpPFRoot;
 	LPMDB lpAdminMDB;
 	LPMAPISESSION lpSession;
+	tstring *pstrBasePath;
+	UserArgs::ActionScope nScope;
 };
 

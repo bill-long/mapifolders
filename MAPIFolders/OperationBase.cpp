@@ -4,9 +4,11 @@
 #include <algorithm>
 
 
-OperationBase::OperationBase()
+OperationBase::OperationBase(tstring *pstrBasePath, UserArgs::ActionScope nScope)
 {
 	this->lpAdminMDB = NULL;
+	this->pstrBasePath = pstrBasePath;
+	this->nScope = nScope;
 }
 
 
@@ -55,7 +57,7 @@ void OperationBase::DoOperation()
 
 	CORg(MAPIInitialize (&MAPIINIT));
 
-	CORg(MAPILogonEx(0, NULL, NULL, MAPI_UNICODE | MAPI_LOGON_UI | MAPI_EXTENDED | MAPI_ALLOW_OTHERS | MAPI_LOGON_UI | MAPI_EXPLICIT_PROFILE, &lpSession));
+	CORg(MAPILogonEx(0, NULL, NULL, MAPI_LOGON_UI | MAPI_EXTENDED | MAPI_ALLOW_OTHERS | MAPI_LOGON_UI | MAPI_EXPLICIT_PROFILE, &lpSession));
 		
 	lpPFRoot = GetPFRoot(lpSession);
 	if (lpPFRoot == NULL)
@@ -152,7 +154,7 @@ LPMAPIFOLDER OperationBase::GetPFRoot(IMAPISession *pSession)
 
 	std::wcout << "Opening public folders..." << std::endl;
 	CORg(pSession->OpenMsgStore(NULL, publicEntryID.cb, (LPENTRYID)publicEntryID.lpb, NULL,
-		MAPI_BEST_ACCESS | 0x00000100, &lpMDB));
+		MAPI_BEST_ACCESS | MDB_ONLINE, &lpMDB));
 
 	CORg(HrGetOneProp(
 			lpMDB,
@@ -171,13 +173,13 @@ LPMAPIFOLDER OperationBase::GetPFRoot(IMAPISession *pSession)
 		(LPVOID*) &lpXManageStore));
 
 	LPSTR lpszMailboxDN = NULL;
-	ULONG flags = OPENSTORE_USE_ADMIN_PRIVILEGE | OPENSTORE_PUBLIC;
+	ULONG flags = OPENSTORE_USE_ADMIN_PRIVILEGE;
 	CORg(lpXManageStore->CreateStoreEntryID((LPSTR)szServerDN, lpszMailboxDN,
 		flags,
 		&adminEntryID.cb, (LPENTRYID *)&adminEntryID.lpb));
 
 	CORg(pSession->OpenMsgStore(NULL, adminEntryID.cb, (LPENTRYID)adminEntryID.lpb, NULL,
-		MAPI_BEST_ACCESS | 0x00000100, &lpAdminMDB)); // MDB_ONLINE is 0x100
+		MAPI_BEST_ACCESS | MDB_ONLINE, &lpAdminMDB));
 
 	ULONG ulObjType = NULL;
 	CORg(lpAdminMDB->OpenEntry(NULL, NULL, NULL, MAPI_BEST_ACCESS, &ulObjType, (LPUNKNOWN *) &lpRoot));

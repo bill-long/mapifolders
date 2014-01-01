@@ -36,7 +36,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		{
 			if(ua.fCheckFolderAcl())
 			{
-				ValidateFolderACL *checkACLOp = new ValidateFolderACL(false);
+				ValidateFolderACL *checkACLOp = new ValidateFolderACL(ua.pstrFolderPath(), ua.nScope(), false);
 				OperationBase *op = checkACLOp;
 				op->DoOperation();
 			}

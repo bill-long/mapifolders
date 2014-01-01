@@ -3,8 +3,8 @@
 #include "MAPIFolders.h"
 
 
-ValidateFolderACL::ValidateFolderACL(bool fixBadACLs)
-	:OperationBase()
+ValidateFolderACL::ValidateFolderACL(tstring *pstrBasePath, UserArgs::ActionScope nScope, bool fixBadACLs)
+	:OperationBase(pstrBasePath, nScope)
 {
 	this->FixBadACLs = fixBadACLs;
 }
