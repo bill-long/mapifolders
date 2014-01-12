@@ -9,10 +9,14 @@ class ValidateFolderACL :
 public:
 	ValidateFolderACL(tstring *pstrBasePath, UserArgs::ActionScope nScope, bool fixBadACLs);
 	~ValidateFolderACL(void);
+	HRESULT Initialize(void);
 	void ProcessFolder(LPMAPIFOLDER folder, std::wstring folderPath);
 
 private:
 	bool FixBadACLs;
+	bool IsInitialized;
+	PSID psidAnonymous;
 	void FixACL(LPMAPIFOLDER folder);
+	HRESULT ValidateFolderACL::CheckACLTable(LPMAPIFOLDER folder, bool &aclTableIsGood);
 };
 

@@ -2,11 +2,30 @@
 #include "ValidateFolderACL.h"
 #include "MAPIFolders.h"
 
+enum {
+    ePR_MEMBER_ENTRYID, 
+    ePR_MEMBER_RIGHTS,  
+    ePR_MEMBER_ID, 
+    ePR_MEMBER_NAME, 
+    NUM_COLS
+};
+
+SizedSPropTagArray(NUM_COLS, rgPropTag) =
+{
+    NUM_COLS,
+    {
+        PR_MEMBER_ENTRYID,  // Unique across directory.
+        PR_MEMBER_RIGHTS,  
+        PR_MEMBER_ID,       // Unique within ACL table. 
+        PR_MEMBER_NAME,     // Display name.
+    }
+};
 
 ValidateFolderACL::ValidateFolderACL(tstring *pstrBasePath, UserArgs::ActionScope nScope, bool fixBadACLs)
 	:OperationBase(pstrBasePath, nScope)
 {
 	this->FixBadACLs = fixBadACLs;
+	this->IsInitialized = false;
 }
 
 
@@ -14,6 +33,33 @@ ValidateFolderACL::~ValidateFolderACL(void)
 {
 }
 
+HRESULT ValidateFolderACL::Initialize(void)
+{
+	HRESULT hr = S_OK;
+	this->psidAnonymous = (PSID)malloc(SECURITY_MAX_SID_SIZE);
+	DWORD dwLength = SECURITY_MAX_SID_SIZE;
+	std::wcout << L"Buffer size:" << dwLength << std::endl;
+	if (!this->psidAnonymous)
+	{
+		std::wcout << L"Failed to allocate memory" << std::endl;
+		hr = HRESULT_FROM_WIN32(GetLastError());
+		goto Error;
+	}
+
+	if (!CreateWellKnownSid(WinAnonymousSid, NULL, this->psidAnonymous, &dwLength))
+	{
+		std::wcout << L"Failed to create Anonymous SID" << std::endl;
+		hr = HRESULT_FROM_WIN32(GetLastError());
+		goto Error;
+	}
+
+	this->IsInitialized = true;
+
+Cleanup:
+	return hr;
+Error:
+	goto Cleanup;
+}
 
 void ValidateFolderACL::ProcessFolder(LPMAPIFOLDER folder, std::wstring folderPath)
 {
@@ -25,7 +71,13 @@ void ValidateFolderACL::ProcessFolder(LPMAPIFOLDER folder, std::wstring folderPa
 	LPSPropValue lpPropValue = NULL;
 	ULONG cValues = 0;
 
-	std::wcout << "Checking ACL on folder: " << folderPath.c_str() << std::endl;
+	if (!this->IsInitialized)
+	{
+		std::wcout << L"Operation was not initialized." << std::endl;
+		goto Error;
+	}
+
+	std::wcout << L"Checking ACL on folder: " << folderPath.c_str() << std::endl;
 
 RetryGetProps:
 	hr = folder->GetProps(&rgPropTag, NULL, &cValues, &lpPropValue);
@@ -80,6 +132,7 @@ RetryGetProps:
 
 		bool groupDenyEncountered = false;
 		bool aclIsNonCanonical = false;
+		BOOL foundAnonymous = false;
 
 		for (DWORD x = 0; x < ACLSizeInfo.AceCount; x++)
 		{
@@ -144,6 +197,11 @@ RetryGetProps:
 					break;
 				}
 
+				if (!foundAnonymous)
+				{
+					foundAnonymous = EqualSid(SidStart, this->psidAnonymous);
+				}
+
 				DWORD dwSidName = 0;
 				DWORD dwSidDomain = 0;
 				SID_NAME_USE SidNameUse;
@@ -187,7 +245,7 @@ RetryGetProps:
 				}
 				else if (AceType == ACCESS_ALLOWED_ACE_TYPE && SidNameUse == SidTypeGroup && groupDenyEncountered == true)
 				{
-					std::wcout << L"     ACL on this folder is non-canonical!" << std::endl;
+					std::wcout << L"     ACL on this folder is non-canonical" << std::endl;
 					aclIsNonCanonical = true;
 				}
 
@@ -197,7 +255,16 @@ RetryGetProps:
 			}
 		}
 
-		if (aclIsNonCanonical)
+		if (!foundAnonymous)
+		{
+			std::wcout << L"     ACL is missing Anonymous" << std::endl;
+			aclIsNonCanonical = true;
+		}
+
+		bool aclTableIsGood;
+		CORg(this->CheckACLTable(folder, aclTableIsGood));
+
+		if ((aclIsNonCanonical || !aclTableIsGood) && this->FixBadACLs)
 		{
 			this->FixACL(folder);
 		}
@@ -205,6 +272,58 @@ RetryGetProps:
 
 Cleanup:
 	return;
+Error:
+	goto Cleanup;
+}
+
+// Returns true if there is a problem
+HRESULT ValidateFolderACL::CheckACLTable(LPMAPIFOLDER folder, bool &aclTableIsGood)
+{
+	aclTableIsGood = true;
+	HRESULT hr = S_OK;
+	LPEXCHANGEMODIFYTABLE lpExchModTbl = NULL;
+	LPMAPITABLE lpMapiTable = NULL;
+	ULONG lpulRowCount = NULL;
+	LPSRowSet pRows = NULL;
+	UINT x = 0;
+	UINT y = 0;
+
+	CORg(folder->OpenProperty(PR_ACL_TABLE, &IID_IExchangeModifyTable, 0, MAPI_DEFERRED_ERRORS, (LPUNKNOWN*)&lpExchModTbl));
+	CORg(lpExchModTbl->GetTable(0, &lpMapiTable));
+	CORg(lpMapiTable->SetColumns((LPSPropTagArray)&rgPropTag, 0));
+	CORg(HrQueryAllRows(lpMapiTable, NULL, NULL, NULL, NULL, &pRows));
+
+	// Use a nested loop to check for duplicate entries
+	for (x = 0; x < pRows->cRows; x++)
+	{
+		for (y = 0; y < pRows->cRows; y++)
+		{
+			if (x == y)
+			{
+				continue;
+			}
+
+			if (pRows->aRow[x].lpProps[ePR_MEMBER_ID].Value.l == pRows->aRow[y].lpProps[ePR_MEMBER_ID].Value.l)
+			{
+				std::wcout << "     ACL table has duplicate security principals." << std::endl;
+				aclTableIsGood = false;
+				break;
+			}
+		}
+
+		if (!aclTableIsGood)
+			break;
+	}
+
+Cleanup:
+	if (pRows)
+		FreeProws(pRows);
+	if (lpMapiTable)
+		lpMapiTable->Release();
+	if (lpExchModTbl)
+		lpExchModTbl->Release();
+
+	return hr;
 Error:
 	goto Cleanup;
 }

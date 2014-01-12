@@ -8,6 +8,7 @@
 
 int _tmain(int argc, _TCHAR* argv[])
 {
+	HRESULT hr = S_OK;
 	UserArgs ua;
 	if (ua.Parse(argc, argv))
 	{
@@ -37,6 +38,7 @@ int _tmain(int argc, _TCHAR* argv[])
 			if(ua.fCheckFolderAcl())
 			{
 				ValidateFolderACL *checkACLOp = new ValidateFolderACL(ua.pstrFolderPath(), ua.nScope(), false);
+				CORg(checkACLOp->Initialize());
 				OperationBase *op = checkACLOp;
 				op->DoOperation();
 			}
@@ -54,5 +56,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		ua.ShowHelp();
 	}
 
+Error:
+	std::wcout << "Finished." << std::endl;
 }
 

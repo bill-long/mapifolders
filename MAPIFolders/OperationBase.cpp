@@ -173,7 +173,7 @@ LPMAPIFOLDER OperationBase::GetPFRoot(IMAPISession *pSession)
 		(LPVOID*) &lpXManageStore));
 
 	LPSTR lpszMailboxDN = NULL;
-	ULONG flags = OPENSTORE_USE_ADMIN_PRIVILEGE;
+	ULONG flags = OPENSTORE_USE_ADMIN_PRIVILEGE | OPENSTORE_PUBLIC;
 	CORg(lpXManageStore->CreateStoreEntryID((LPSTR)szServerDN, lpszMailboxDN,
 		flags,
 		&adminEntryID.cb, (LPENTRYID *)&adminEntryID.lpb));
