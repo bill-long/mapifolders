@@ -22,22 +22,22 @@
 class OperationBase
 {
 public:
-	OperationBase(std::wstring basePath, UserArgs::ActionScope scope);
+	OperationBase(tstring *basePath, UserArgs::ActionScope scope);
 	~OperationBase(void);
 	void DoOperation();
-	virtual void ProcessFolder(LPMAPIFOLDER folder, std::wstring folderPath);
+	virtual void ProcessFolder(LPMAPIFOLDER folder, tstring folderPath);
 	std::string GetStringFromFolderPath(LPMAPIFOLDER folder);
 
 private:
 	LPMAPIFOLDER GetPFRoot(IMAPISession *pSession);
 	LPMAPIFOLDER GetStartingFolder(IMAPISession *pSession);
-	void TraverseFolders(CComPtr<IMAPISession> session, LPMAPIFOLDER baseFolder, std::wstring parentPath);
+	void TraverseFolders(CComPtr<IMAPISession> session, LPMAPIFOLDER baseFolder, tstring parentPath);
 	HRESULT BuildServerDN(LPCTSTR szServerName, LPCTSTR szPost, LPTSTR* lpszServerDN);
 	LPMAPIFOLDER lpPFRoot;
 	LPMAPIFOLDER lpStartingFolder;
 	LPMDB lpAdminMDB;
 	LPMAPISESSION lpSession;
-	std::wstring strBasePath;
+	tstring *strBasePath;
 	UserArgs::ActionScope nScope;
 };
 

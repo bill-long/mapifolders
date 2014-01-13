@@ -4,7 +4,7 @@
 #include <algorithm>
 
 
-OperationBase::OperationBase(std::wstring pstrBasePath, UserArgs::ActionScope nScope)
+OperationBase::OperationBase(tstring *pstrBasePath, UserArgs::ActionScope nScope)
 {
 	this->lpAdminMDB = NULL;
 	this->strBasePath = pstrBasePath;
@@ -17,7 +17,7 @@ OperationBase::~OperationBase(void)
 }
 
 
-void OperationBase::ProcessFolder(LPMAPIFOLDER folder, std::wstring folderPath)
+void OperationBase::ProcessFolder(LPMAPIFOLDER folder, tstring folderPath)
 {
 	return;
 }
@@ -52,7 +52,7 @@ void OperationBase::DoOperation()
 	lpPFRoot = NULL;
 	lpStartingFolder = NULL;
 	lpSession = NULL;
-	std::wstring rootPath(L"");
+	tstring rootPath(_T(""));
 
 	MAPIINIT_0  MAPIINIT= { 0, MAPI_MULTITHREAD_NOTIFICATIONS};
 
@@ -64,11 +64,11 @@ void OperationBase::DoOperation()
 	if (lpPFRoot == NULL)
 		goto Error;
 
-	lpStartingFolder = GetStartingFolder(lpSession);
-	if (lpStartingFolder == NULL)
-		goto Error;
+//	lpStartingFolder = GetStartingFolder(lpSession);
+//	if (lpStartingFolder == NULL)
+//		goto Error;
 
-	TraverseFolders(lpSession, lpPFRoot, strBasePath);
+	TraverseFolders(lpSession, lpPFRoot, rootPath);
 
 Cleanup:
 	if (lpPFRoot)
@@ -110,8 +110,7 @@ LPMAPIFOLDER OperationBase::GetPFRoot(IMAPISession *pSession)
 		cCols,
 		{
 			PR_ENTRYID,
-			PR_DISPLAY_NAME_W,
-			PR_DISPLAY_NAME_A,
+			PR_DISPLAY_NAME,
 			PR_MDB_PROVIDER
 		}
 	};
@@ -123,7 +122,7 @@ LPMAPIFOLDER OperationBase::GetPFRoot(IMAPISession *pSession)
 
 	CORg(spTable->QueryRows(50, 0, &pmrows));
 
-	std::wcout << L"Found " << pmrows->cRows << L" stores in MAPI profile:" << std::endl;
+	tcout << "Found " << pmrows->cRows << " stores in MAPI profile:" << std::endl;
 	for (UINT i=0; i != pmrows->cRows; i++)
 	{
 		SRow *prow = pmrows->aRow + i;
@@ -134,9 +133,9 @@ LPMAPIFOLDER OperationBase::GetPFRoot(IMAPISession *pSession)
 		if (PR_DISPLAY_NAME_A == prow->lpProps[COL_DISPLAYNAME_A].ulPropTag)
 			pwzA = prow->lpProps[COL_DISPLAYNAME_A].Value.lpszA;
 		if (pwz)
-			std::wcout << L" " << std::setw(4) << i << ": " << (pwz ? pwz : L"<NULL>") << std::endl;
+			std::wcout << L" " << std::setw(4) << i << L": " << (pwz ? pwz : L"<NULL>") << std::endl;
 		else
-			std::wcout << L" " << std::setw(4) << i << ": " << (pwzA ? pwzA : "<NULL>") << std::endl;
+			tcout << " " << std::setw(4) << i << ": " << (pwzA ? pwzA : "<NULL>") << std::endl;
 
 		if (IsEqualMAPIUID(prow->lpProps[COL_MDB_PROVIDER].Value.bin.lpb,pbExchangeProviderPublicGuid))
 		{
@@ -147,17 +146,17 @@ LPMAPIFOLDER OperationBase::GetPFRoot(IMAPISession *pSession)
 
 	if (!foundPFStore)
 	{
-		std::wcout << "No public folder database in MAPI profile." << std::endl;
+		tcout << "No public folder database in MAPI profile." << std::endl;
 		goto Error;
 	}
 
 	if (publicEntryID.cb < 1)
 	{
-		std::wcout << "Could not get public folder store entry ID." << std::endl;
+		tcout << "Could not get public folder store entry ID." << std::endl;
 		goto Error;
 	}
 
-	std::wcout << "Opening public folders..." << std::endl;
+	tcout << "Opening public folders..." << std::endl;
 	CORg(pSession->OpenMsgStore(NULL, publicEntryID.cb, (LPENTRYID)publicEntryID.lpb, NULL,
 		MAPI_BEST_ACCESS | MDB_ONLINE, &lpMDB));
 
@@ -166,7 +165,7 @@ LPMAPIFOLDER OperationBase::GetPFRoot(IMAPISession *pSession)
 			PR_HIERARCHY_SERVER,
 			&lpServerName));
 
-	std::wcout << "Using public folder server/mailbox: " << lpServerName->Value.lpszA << std::endl;
+	tcout << "Using public folder server/mailbox: " << lpServerName->Value.lpszA << std::endl;
 
 	CORg(BuildServerDN(
 				(LPCTSTR)lpServerName->Value.lpszA,
@@ -222,9 +221,11 @@ LPMAPIFOLDER OperationBase::GetStartingFolder(IMAPISession *pSession)
 			PR_DISPLAY_NAME_A,
 		}
 	};
+
+	return NULL;
 }
 
-void OperationBase::TraverseFolders(CComPtr<IMAPISession> session, LPMAPIFOLDER baseFolder, std::wstring parentPath)
+void OperationBase::TraverseFolders(CComPtr<IMAPISession> session, LPMAPIFOLDER baseFolder, tstring parentPath)
 {
 	SRowSet *pmrows = NULL;
 	LPMAPITABLE hierarchyTable = NULL;
@@ -255,19 +256,19 @@ RetryGetHierarchyTable:
 	{
 		if (hr == MAPI_E_TIMEOUT)
 		{
-			std::wcout << L"     Encountered a timeout in GetHierarchyTable. Retrying in 5 seconds..." << std::endl;
+			tcout << "     Encountered a timeout in GetHierarchyTable. Retrying in 5 seconds..." << std::endl;
 			Sleep(5000);
 			goto RetryGetHierarchyTable;
 		}
 		else if (hr == MAPI_E_NETWORK_ERROR)
 		{
-			std::wcout << L"     Encountered a network error in GetHierarchyTable. Retrying in 5 seconds..." << std::endl;
+			tcout << "     Encountered a network error in GetHierarchyTable. Retrying in 5 seconds..." << std::endl;
 			Sleep(5000);
 			goto RetryGetHierarchyTable;
 		}
 		else
 		{
-			std::wcout << L"     GetHierarchyTable returned an error. hr = " << std::hex << hr << std::endl;
+			tcout << "     GetHierarchyTable returned an error. hr = " << std::hex << hr << std::endl;
 			goto Error;
 		}
 	}
@@ -281,21 +282,21 @@ RetryQueryRows:
 	{
 		if (hr == MAPI_E_TIMEOUT)
 		{
-			std::wcout << L"     Encountered a timeout in QueryRows. Retrying in 5 seconds..." << std::endl;
+			tcout << "     Encountered a timeout in QueryRows. Retrying in 5 seconds..." << std::endl;
 			pmrows = NULL;
 			Sleep(5000);
 			goto RetryQueryRows;
 		}
 		else if (hr == MAPI_E_NETWORK_ERROR)
 		{
-			std::wcout << L"     Encountered a network error in QueryRows. Retrying in 5 seconds..." << std::endl;
+			tcout << "     Encountered a network error in QueryRows. Retrying in 5 seconds..." << std::endl;
 			pmrows = NULL;
 			Sleep(5000);
 			goto RetryQueryRows;
 		}
 		else
 		{
-			std::wcout << L"     QueryRows returned an error. hr = " << std::hex << hr << std::endl;
+			tcout << "     QueryRows returned an error. hr = " << std::hex << hr << std::endl;
 			goto Error;
 		}
 	}
@@ -303,12 +304,12 @@ RetryQueryRows:
 	for (UINT i=0; i != pmrows->cRows; i++)
 	{
 		SRow *prow = pmrows->aRow + i;
-		LPCWSTR pwz = NULL;
-		if (PR_DISPLAY_NAME_W == prow->lpProps[COL_DISPLAYNAME_W].ulPropTag)
-			pwz = prow->lpProps[COL_DISPLAYNAME_W].Value.lpszW;
+		LPCSTR pwz = NULL;
+		if (PR_DISPLAY_NAME_A == prow->lpProps[COL_DISPLAYNAME_A].ulPropTag)
+			pwz = prow->lpProps[COL_DISPLAYNAME_A].Value.lpszA;
 
-		std::wstring thisPath(parentPath.c_str());
-		thisPath.append(L"\\");
+		tstring thisPath(parentPath.c_str());
+		thisPath.append(_T("\\"));
 		thisPath.append(pwz);
 
 		ULONG ulObjType = NULL;
@@ -320,19 +321,19 @@ RetryOpenEntry:
 		{
 			if (hr == MAPI_E_TIMEOUT)
 			{
-				std::wcout << L"     Encountered a timeout in OpenEntry. Retrying in 5 seconds..." << std::endl;
+				tcout << "     Encountered a timeout in OpenEntry. Retrying in 5 seconds..." << std::endl;
 				Sleep(5000);
 				goto RetryOpenEntry;
 			}
 			else if (hr == MAPI_E_NETWORK_ERROR)
 			{
-				std::wcout << L"     Encountered a network error in OpenEntry. Retrying in 5 seconds..." << std::endl;
+				tcout << "     Encountered a network error in OpenEntry. Retrying in 5 seconds..." << std::endl;
 				Sleep(5000);
 				goto RetryOpenEntry;
 			}
 			else
 			{
-				std::wcout << L"     OpenEntry returned an error. hr = " << std::hex << hr << std::endl;
+				tcout << "     OpenEntry returned an error. hr = " << std::hex << hr << std::endl;
 				goto Error;
 			}
 		}

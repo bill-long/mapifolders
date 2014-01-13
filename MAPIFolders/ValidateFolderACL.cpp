@@ -31,7 +31,7 @@ struct SavedACEInfo
 	long accessRights;
 };
 
-ValidateFolderACL::ValidateFolderACL(std::wstring pstrBasePath, UserArgs::ActionScope nScope, bool fixBadACLs)
+ValidateFolderACL::ValidateFolderACL(tstring *pstrBasePath, UserArgs::ActionScope nScope, bool fixBadACLs)
 	:OperationBase(pstrBasePath, nScope)
 {
 	this->FixBadACLs = fixBadACLs;
@@ -48,17 +48,17 @@ HRESULT ValidateFolderACL::Initialize(void)
 	HRESULT hr = S_OK;
 	this->psidAnonymous = (PSID)malloc(SECURITY_MAX_SID_SIZE);
 	DWORD dwLength = SECURITY_MAX_SID_SIZE;
-	std::wcout << L"Buffer size:" << dwLength << std::endl;
+	tcout << "Buffer size:" << dwLength << std::endl;
 	if (!this->psidAnonymous)
 	{
-		std::wcout << L"Failed to allocate memory" << std::endl;
+		tcout << "Failed to allocate memory" << std::endl;
 		hr = HRESULT_FROM_WIN32(GetLastError());
 		goto Error;
 	}
 
 	if (!CreateWellKnownSid(WinAnonymousSid, NULL, this->psidAnonymous, &dwLength))
 	{
-		std::wcout << L"Failed to create Anonymous SID" << std::endl;
+		tcout << "Failed to create Anonymous SID" << std::endl;
 		hr = HRESULT_FROM_WIN32(GetLastError());
 		goto Error;
 	}
@@ -71,7 +71,7 @@ Error:
 	goto Cleanup;
 }
 
-void ValidateFolderACL::ProcessFolder(LPMAPIFOLDER folder, std::wstring folderPath)
+void ValidateFolderACL::ProcessFolder(LPMAPIFOLDER folder, tstring folderPath)
 {
 	BOOL bValidDACL = false;
 	PACL pACL = NULL;
@@ -83,11 +83,11 @@ void ValidateFolderACL::ProcessFolder(LPMAPIFOLDER folder, std::wstring folderPa
 
 	if (!this->IsInitialized)
 	{
-		std::wcout << L"Operation was not initialized." << std::endl;
+		tcout << "Operation was not initialized." << std::endl;
 		goto Error;
 	}
 
-	std::wcout << std::endl << L"Checking ACL on folder: " << folderPath.c_str() << std::endl;
+	tcout << std::endl << "Checking ACL on folder: " << folderPath.c_str() << std::endl;
 
 RetryGetProps:
 	hr = folder->GetProps(&rgPropTag, NULL, &cValues, &lpPropValue);
@@ -95,13 +95,13 @@ RetryGetProps:
 	{
 		if (hr == MAPI_E_TIMEOUT)
 		{
-			std::wcout << L"     Encountered a timeout trying to read the security descriptor. Retrying in 5 seconds..." << std::endl;
+			tcout << "     Encountered a timeout trying to read the security descriptor. Retrying in 5 seconds..." << std::endl;
 			Sleep(5000);
 			goto RetryGetProps;
 		}
 		else
 		{
-			std::wcout << L"     Failed to read security descriptor on this folder. hr = " << std::hex << hr << std::endl;
+			tcout << "     Failed to read security descriptor on this folder. hr = " << std::hex << hr << std::endl;
 			goto Error;
 		}
 	}
@@ -111,7 +111,7 @@ RetryGetProps:
 		PSECURITY_DESCRIPTOR pSecurityDescriptor = SECURITY_DESCRIPTOR_OF(lpPropValue->Value.bin.lpb);
 		if (!IsValidSecurityDescriptor(pSecurityDescriptor))
 		{
-			std::wcout << L"     Invalid security descriptor." << std::endl;
+			tcout << "     Invalid security descriptor." << std::endl;
 			goto Error;
 		}
 
@@ -123,7 +123,7 @@ RetryGetProps:
 
 		if (!(succeeded && bValidDACL && pACL))
 		{
-			std::wcout << L"     Invalid DACL." << std::endl;
+			tcout << "     Invalid DACL." << std::endl;
 			goto Error;
 		}
 
@@ -136,7 +136,7 @@ RetryGetProps:
 
 		if (!succeeded)
 		{
-			std::wcout << L"     Could not get ACL information." << std::endl;
+			tcout << "     Could not get ACL information." << std::endl;
 			goto Error;
 		}
 
@@ -255,7 +255,7 @@ RetryGetProps:
 				}
 				else if (AceType == ACCESS_ALLOWED_ACE_TYPE && SidNameUse == SidTypeGroup && groupDenyEncountered == true)
 				{
-					std::wcout << L"     ACL on this folder is non-canonical" << std::endl;
+					tcout << "     ACL on this folder is non-canonical" << std::endl;
 					aclIsNonCanonical = true;
 				}
 
@@ -267,7 +267,7 @@ RetryGetProps:
 
 		if (!foundAnonymous)
 		{
-			std::wcout << L"     ACL is missing Anonymous" << std::endl;
+			tcout << "     ACL is missing Anonymous" << std::endl;
 			aclIsNonCanonical = true;
 		}
 
@@ -315,7 +315,7 @@ HRESULT ValidateFolderACL::CheckACLTable(LPMAPIFOLDER folder, bool &aclTableIsGo
 
 			if (pRows->aRow[x].lpProps[ePR_MEMBER_ID].Value.l == pRows->aRow[y].lpProps[ePR_MEMBER_ID].Value.l)
 			{
-				std::wcout << "     ACL table has duplicate security principals." << std::endl;
+				tcout << "     ACL table has duplicate security principals." << std::endl;
 				aclTableIsGood = false;
 				break;
 			}
@@ -352,18 +352,18 @@ void ValidateFolderACL::FixACL(LPMAPIFOLDER folder)
 	UINT savedACECount = 0;
 	bool foundAnonymous = false;
 
-	std::wcout << L"     Attempting to fix ACL..." << std::endl;
+	tcout << "     Attempting to fix ACL..." << std::endl;
 
 	CORg(folder->OpenProperty(PR_ACL_TABLE, &IID_IExchangeModifyTable, 0, MAPI_DEFERRED_ERRORS, (LPUNKNOWN*)&lpExchModTbl));
 	CORg(lpExchModTbl->GetTable(0, &lpMapiTable));
 	CORg(lpMapiTable->SetColumns((LPSPropTagArray)&rgPropTag, 0));
 	CORg(HrQueryAllRows(lpMapiTable, NULL, NULL, NULL, NULL, &pRowsBefore));
 
-	std::wcout << std::endl << L"     ACL table before changes:" << std::endl;
+	tcout << std::endl << "     ACL table before changes:" << std::endl;
 
 	for (x = 0; x < pRowsBefore->cRows; x++)
 	{
-		std::wcout << "     " << pRowsBefore->aRow[x].lpProps[ePR_MEMBER_NAME].Value.lpszA << "," << 
+		tcout << "     " << pRowsBefore->aRow[x].lpProps[ePR_MEMBER_NAME].Value.lpszA << "," << 
 			pRowsBefore->aRow[x].lpProps[ePR_MEMBER_RIGHTS].Value.l << std::endl;
 
 		if (strAnonymous == std::string(pRowsBefore->aRow[x].lpProps[ePR_MEMBER_NAME].Value.lpszA))
@@ -490,11 +490,11 @@ void ValidateFolderACL::FixACL(LPMAPIFOLDER folder)
 	CORg(lpExchModTbl->GetTable(0, &lpMapiTable));
 	CORg(lpMapiTable->SetColumns((LPSPropTagArray)&rgPropTag, 0));
 	CORg(HrQueryAllRows(lpMapiTable, NULL, NULL, NULL, NULL, &pRowsTemp));
-	std::wcout << std::endl << L"     ACL table after changes:" << std::endl;
+	tcout << std::endl << "     ACL table after changes:" << std::endl;
 
 	for (x = 0; x < pRowsTemp->cRows; x++)
 	{
-		std::wcout << "     " << pRowsTemp->aRow[x].lpProps[ePR_MEMBER_NAME].Value.lpszA << "," << 
+		tcout << "     " << pRowsTemp->aRow[x].lpProps[ePR_MEMBER_NAME].Value.lpszA << "," << 
 			pRowsTemp->aRow[x].lpProps[ePR_MEMBER_RIGHTS].Value.l << std::endl;
 	}
 

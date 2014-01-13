@@ -15,18 +15,18 @@ int _tmain(int argc, _TCHAR* argv[])
 
 #ifdef DEBUG
 		// Dump parsed args
-		std::wcout << "Parsed successfully." << std::endl;
-		std::wcout << "fCheckFolderAcl: " << ua.fCheckFolderAcl() << std::endl;
-		std::wcout << "fCheckItems: " << ua.fCheckItems() << std::endl;
-		std::wcout << "fDisplayHelp: " << ua.fDisplayHelp() << std::endl;
-		std::wcout << "fFixFolderAcl: " << ua.fFixFolderAcl() << std::endl;
-		std::wcout << "fFixItems: " << ua.fFixItems() << std::endl;
-		std::wcout << "nScope: " << ua.nScope() << std::endl;
-		std::wcout << "pstrFolderPath: ";
+		tcout << "Parsed successfully." << std::endl;
+		tcout << "fCheckFolderAcl: " << ua.fCheckFolderAcl() << std::endl;
+		tcout << "fCheckItems: " << ua.fCheckItems() << std::endl;
+		tcout << "fDisplayHelp: " << ua.fDisplayHelp() << std::endl;
+		tcout << "fFixFolderAcl: " << ua.fFixFolderAcl() << std::endl;
+		tcout << "fFixItems: " << ua.fFixItems() << std::endl;
+		tcout << "nScope: " << ua.nScope() << std::endl;
+		tcout << "pstrFolderPath: ";
 		if (ua.pstrFolderPath())
-			std::wcout << ua.pstrFolderPath()->c_str() << std::endl;
+			tcout << ua.pstrFolderPath()->c_str() << std::endl;
 		else
-			std::wcout << "Null" << std::endl;
+			tcout << "Null" << std::endl;
 #endif
 
 		if(ua.fDisplayHelp())
@@ -66,6 +66,6 @@ int _tmain(int argc, _TCHAR* argv[])
 	}
 
 Error:
-	std::wcout << "Finished." << std::endl;
+	tcout << "Finished." << std::endl;
 }
 

@@ -7,10 +7,10 @@ class ValidateFolderACL :
 	public OperationBase
 {
 public:
-	ValidateFolderACL(std::wstring pstrBasePath, UserArgs::ActionScope nScope, bool fixBadACLs);
+	ValidateFolderACL(tstring *pstrBasePath, UserArgs::ActionScope nScope, bool fixBadACLs);
 	~ValidateFolderACL(void);
 	HRESULT Initialize(void);
-	void ProcessFolder(LPMAPIFOLDER folder, std::wstring folderPath);
+	void ProcessFolder(LPMAPIFOLDER folder, tstring folderPath);
 
 private:
 	bool FixBadACLs;
