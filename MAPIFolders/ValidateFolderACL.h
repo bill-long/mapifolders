@@ -7,7 +7,7 @@ class ValidateFolderACL :
 	public OperationBase
 {
 public:
-	ValidateFolderACL(tstring *pstrBasePath, UserArgs::ActionScope nScope, bool fixBadACLs);
+	ValidateFolderACL(std::wstring pstrBasePath, UserArgs::ActionScope nScope, bool fixBadACLs);
 	~ValidateFolderACL(void);
 	HRESULT Initialize(void);
 	void ProcessFolder(LPMAPIFOLDER folder, std::wstring folderPath);
@@ -17,6 +17,7 @@ private:
 	bool IsInitialized;
 	PSID psidAnonymous;
 	void FixACL(LPMAPIFOLDER folder);
-	HRESULT ValidateFolderACL::CheckACLTable(LPMAPIFOLDER folder, bool &aclTableIsGood);
+	HRESULT CheckACLTable(LPMAPIFOLDER folder, bool &aclTableIsGood);
+	bool IsEntryIdEqual(SBinary a, SBinary b);
 };
 

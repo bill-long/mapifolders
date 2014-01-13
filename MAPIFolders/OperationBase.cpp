@@ -4,10 +4,10 @@
 #include <algorithm>
 
 
-OperationBase::OperationBase(tstring *pstrBasePath, UserArgs::ActionScope nScope)
+OperationBase::OperationBase(std::wstring pstrBasePath, UserArgs::ActionScope nScope)
 {
 	this->lpAdminMDB = NULL;
-	this->pstrBasePath = pstrBasePath;
+	this->strBasePath = pstrBasePath;
 	this->nScope = nScope;
 }
 
@@ -50,6 +50,7 @@ void OperationBase::DoOperation()
 	HRESULT hr = S_OK;
 	lpAdminMDB = NULL;
 	lpPFRoot = NULL;
+	lpStartingFolder = NULL;
 	lpSession = NULL;
 	std::wstring rootPath(L"");
 
@@ -63,7 +64,11 @@ void OperationBase::DoOperation()
 	if (lpPFRoot == NULL)
 		goto Error;
 
-	TraverseFolders(lpSession, lpPFRoot, rootPath);
+	lpStartingFolder = GetStartingFolder(lpSession);
+	if (lpStartingFolder == NULL)
+		goto Error;
+
+	TraverseFolders(lpSession, lpPFRoot, strBasePath);
 
 Cleanup:
 	if (lpPFRoot)
@@ -191,6 +196,32 @@ Error:
 		MAPIFreeBuffer(szServerDN);
 
 	return lpRoot;
+}
+
+LPMAPIFOLDER OperationBase::GetStartingFolder(IMAPISession *pSession)
+{
+	SRowSet *pmrows = NULL;
+	LPMAPITABLE hierarchyTable = NULL;
+	HRESULT hr = NULL;
+	ULONG objType = NULL;
+
+	enum MAPIColumns
+	{
+		COL_ENTRYID = 0,
+		COL_DISPLAYNAME_W,
+		COL_DISPLAYNAME_A,
+		cCols				// End marker
+	};
+
+	static const SizedSPropTagArray(cCols, mcols) = 
+	{	
+		cCols,
+		{
+			PR_ENTRYID,
+			PR_DISPLAY_NAME_W,
+			PR_DISPLAY_NAME_A,
+		}
+	};
 }
 
 void OperationBase::TraverseFolders(CComPtr<IMAPISession> session, LPMAPIFOLDER baseFolder, std::wstring parentPath)

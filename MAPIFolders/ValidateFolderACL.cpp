@@ -21,7 +21,17 @@ SizedSPropTagArray(NUM_COLS, rgPropTag) =
     }
 };
 
-ValidateFolderACL::ValidateFolderACL(tstring *pstrBasePath, UserArgs::ActionScope nScope, bool fixBadACLs)
+// For comparison later
+std::string strAnonymous = "Anonymous";
+
+struct SavedACEInfo
+{
+	SBinary entryID;
+	SBinary memberID;
+	long accessRights;
+};
+
+ValidateFolderACL::ValidateFolderACL(std::wstring pstrBasePath, UserArgs::ActionScope nScope, bool fixBadACLs)
 	:OperationBase(pstrBasePath, nScope)
 {
 	this->FixBadACLs = fixBadACLs;
@@ -77,7 +87,7 @@ void ValidateFolderACL::ProcessFolder(LPMAPIFOLDER folder, std::wstring folderPa
 		goto Error;
 	}
 
-	std::wcout << L"Checking ACL on folder: " << folderPath.c_str() << std::endl;
+	std::wcout << std::endl << L"Checking ACL on folder: " << folderPath.c_str() << std::endl;
 
 RetryGetProps:
 	hr = folder->GetProps(&rgPropTag, NULL, &cValues, &lpPropValue);
@@ -264,6 +274,7 @@ RetryGetProps:
 		bool aclTableIsGood;
 		CORg(this->CheckACLTable(folder, aclTableIsGood));
 
+		aclTableIsGood = false;
 		if ((aclIsNonCanonical || !aclTableIsGood) && this->FixBadACLs)
 		{
 			this->FixACL(folder);
@@ -276,7 +287,6 @@ Error:
 	goto Cleanup;
 }
 
-// Returns true if there is a problem
 HRESULT ValidateFolderACL::CheckACLTable(LPMAPIFOLDER folder, bool &aclTableIsGood)
 {
 	aclTableIsGood = true;
@@ -330,5 +340,183 @@ Error:
 
 void ValidateFolderACL::FixACL(LPMAPIFOLDER folder)
 {
+	HRESULT hr = S_OK;
+	LPEXCHANGEMODIFYTABLE lpExchModTbl = NULL;
+	LPMAPITABLE lpMapiTable = NULL;
+	ULONG lpulRowCount = NULL;
+	LPSRowSet pRowsBefore = NULL; // The pRows that backs the stuff saved in SavedACEInfo; do not free until end of method
+	LPSRowSet pRowsTemp = NULL;   // The pRows we use for the other queries; this one can be freed
+	UINT x = 0;
+	UINT y = 0;
+	SavedACEInfo savedACEs[500];
+	UINT savedACECount = 0;
+	bool foundAnonymous = false;
 
+	std::wcout << L"     Attempting to fix ACL..." << std::endl;
+
+	CORg(folder->OpenProperty(PR_ACL_TABLE, &IID_IExchangeModifyTable, 0, MAPI_DEFERRED_ERRORS, (LPUNKNOWN*)&lpExchModTbl));
+	CORg(lpExchModTbl->GetTable(0, &lpMapiTable));
+	CORg(lpMapiTable->SetColumns((LPSPropTagArray)&rgPropTag, 0));
+	CORg(HrQueryAllRows(lpMapiTable, NULL, NULL, NULL, NULL, &pRowsBefore));
+
+	std::wcout << std::endl << L"     ACL table before changes:" << std::endl;
+
+	for (x = 0; x < pRowsBefore->cRows; x++)
+	{
+		std::wcout << "     " << pRowsBefore->aRow[x].lpProps[ePR_MEMBER_NAME].Value.lpszA << "," << 
+			pRowsBefore->aRow[x].lpProps[ePR_MEMBER_RIGHTS].Value.l << std::endl;
+
+		if (strAnonymous == std::string(pRowsBefore->aRow[x].lpProps[ePR_MEMBER_NAME].Value.lpszA))
+		{
+			foundAnonymous = true;
+		}
+
+		// Default and Anonymous don't have entry IDs. We won't be removing and re-adding them,
+		// so we just ignore them here.
+		if (pRowsBefore->aRow[x].lpProps[ePR_MEMBER_ENTRYID].Value.bin.cb > 0)
+		{
+			bool found = false;
+			for (y = 0; y < savedACECount; y++)
+			{
+				if (IsEntryIdEqual(savedACEs[y].entryID, pRowsBefore->aRow[x].lpProps[ePR_MEMBER_ENTRYID].Value.bin))
+				{
+					found = true;
+					break;
+				}
+			}
+
+			// Only save each entry to the list once, so we drop any duplicates
+			if (!found)
+			{
+				savedACEs[savedACECount].entryID.cb = pRowsBefore->aRow[x].lpProps[ePR_MEMBER_ENTRYID].Value.bin.cb;
+				savedACEs[savedACECount].entryID.lpb = pRowsBefore->aRow[x].lpProps[ePR_MEMBER_ENTRYID].Value.bin.lpb;
+				savedACEs[savedACECount].memberID.cb = pRowsBefore->aRow[x].lpProps[ePR_MEMBER_ID].Value.bin.cb;
+				savedACEs[savedACECount].memberID.lpb = pRowsBefore->aRow[x].lpProps[ePR_MEMBER_ID].Value.bin.lpb;
+				savedACEs[savedACECount].accessRights = pRowsBefore->aRow[x].lpProps[ePR_MEMBER_RIGHTS].Value.l;
+				savedACECount++;
+			}
+		}
+	}
+
+	// Now remove and re-add each entry ID we found
+	for (x = 0; x < savedACECount; x++)
+	{
+		// First, determine how many times we need to remove it
+		UINT acesToRemove = 0;
+		for (y = 0; y < pRowsBefore->cRows; y++)
+		{
+			if (IsEntryIdEqual(savedACEs[x].entryID, pRowsBefore->aRow[y].lpProps[ePR_MEMBER_ENTRYID].Value.bin))
+			{
+				acesToRemove++;
+			}
+		}
+
+		if (acesToRemove > 1)
+		{
+			std::string foo = "foo"; // purely for a breakpoing
+		}
+
+		for (y = 0; y < acesToRemove; y++)
+		{
+			SPropValue propRemove[1] = {0};
+			ROWLIST rowListRemove = {0};
+
+			propRemove[0].ulPropTag = PR_MEMBER_ID;
+			propRemove[0].Value.bin.cb = savedACEs[x].memberID.cb;
+			propRemove[0].Value.bin.lpb = savedACEs[x].memberID.lpb;
+
+			rowListRemove.cEntries = 1;
+			rowListRemove.aEntries->ulRowFlags = ROW_REMOVE;
+			rowListRemove.aEntries->cValues = 1;
+			rowListRemove.aEntries->rgPropVals = &propRemove[0];
+
+			CORg(lpExchModTbl->ModifyTable(0, &rowListRemove));
+		}
+
+		// We might be reusing this, so check if we need to free
+		if (pRowsTemp)
+		{
+			FreeProws(pRowsTemp);
+		}
+		pRowsTemp = NULL;
+
+		// It's gone. Now add it back.
+		SPropValue propAdd[2] = {0};
+		ROWLIST rowListAdd = {0};
+		propAdd[0].ulPropTag = PR_MEMBER_ENTRYID;
+		propAdd[0].Value.bin.cb = savedACEs[x].entryID.cb;
+		propAdd[0].Value.bin.lpb = savedACEs[x].entryID.lpb;
+		propAdd[1].ulPropTag = PR_MEMBER_RIGHTS;
+		propAdd[1].Value.l = savedACEs[x].accessRights;
+
+		rowListAdd.cEntries = 1;
+		rowListAdd.aEntries->ulRowFlags = ROW_ADD;
+		rowListAdd.aEntries->cValues = 2;
+		rowListAdd.aEntries->rgPropVals = &propAdd[0];
+
+		CORg(lpExchModTbl->ModifyTable(0, &rowListAdd));
+	}
+
+	// Finally, if we didn't find Anonymous, add it now
+	if (!foundAnonymous)
+	{
+		SPropValue prop[1] = {0};
+		prop[0].ulPropTag = PR_MEMBER_ID;
+		prop[0].Value.dbl = -1;
+
+		ROWLIST rowList = {0};
+		rowList.cEntries = 1;
+		rowList.aEntries->ulRowFlags = ROW_ADD;
+		rowList.aEntries->cValues = 1;
+		rowList.aEntries->rgPropVals = &prop[0];
+
+		CORg(lpExchModTbl->ModifyTable(0, &rowList));
+	}
+
+	// Done making changes. Free the table and then request it again.
+	// Reusing pRowsTemp again.
+	if (pRowsTemp)
+		FreeProws(pRowsTemp);
+	if (lpMapiTable)
+		lpMapiTable->Release();
+	if (lpExchModTbl)
+		lpExchModTbl->Release();
+	
+	pRowsTemp = NULL;
+	lpExchModTbl = NULL;
+	lpMapiTable = NULL;
+
+	CORg(folder->OpenProperty(PR_ACL_TABLE, &IID_IExchangeModifyTable, 0, MAPI_DEFERRED_ERRORS, (LPUNKNOWN*)&lpExchModTbl));
+	CORg(lpExchModTbl->GetTable(0, &lpMapiTable));
+	CORg(lpMapiTable->SetColumns((LPSPropTagArray)&rgPropTag, 0));
+	CORg(HrQueryAllRows(lpMapiTable, NULL, NULL, NULL, NULL, &pRowsTemp));
+	std::wcout << std::endl << L"     ACL table after changes:" << std::endl;
+
+	for (x = 0; x < pRowsTemp->cRows; x++)
+	{
+		std::wcout << "     " << pRowsTemp->aRow[x].lpProps[ePR_MEMBER_NAME].Value.lpszA << "," << 
+			pRowsTemp->aRow[x].lpProps[ePR_MEMBER_RIGHTS].Value.l << std::endl;
+	}
+
+Cleanup:
+	if (pRowsTemp)
+		FreeProws(pRowsTemp);
+	if (pRowsBefore)
+		FreeProws(pRowsBefore);
+	if (lpMapiTable)
+		lpMapiTable->Release();
+	if (lpExchModTbl)
+		lpExchModTbl->Release();
+
+	return;
+Error:
+	goto Cleanup;
+}
+
+bool ValidateFolderACL::IsEntryIdEqual(SBinary a, SBinary b)
+{
+	if (a.cb != b.cb)
+		return false;
+
+	return (!memcmp(a.lpb, b.lpb, a.cb));
 }

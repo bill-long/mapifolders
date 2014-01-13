@@ -42,7 +42,16 @@ int _tmain(int argc, _TCHAR* argv[])
 				OperationBase *op = checkACLOp;
 				op->DoOperation();
 			}
-			if(ua.fCheckItems() || ua.fFixFolderAcl() || ua.fFixItems())
+
+			if (ua.fFixFolderAcl())
+			{
+				ValidateFolderACL *checkACLOp = new ValidateFolderACL(ua.pstrFolderPath(), ua.nScope(), true);
+				CORg(checkACLOp->Initialize());
+				OperationBase *op = checkACLOp;
+				op->DoOperation();
+			}
+
+			if(ua.fCheckItems() || ua.fFixItems())
 			{
 				std::cerr << "unimplemented feature." << std::endl;
 			}
