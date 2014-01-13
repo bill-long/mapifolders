@@ -87,7 +87,7 @@ void ValidateFolderACL::ProcessFolder(LPMAPIFOLDER folder, tstring folderPath)
 		goto Error;
 	}
 
-	tcout << std::endl << "Checking ACL on folder: " << folderPath.c_str() << std::endl;
+	tcout << "Checking ACL on folder: " << folderPath.c_str() << std::endl;
 
 RetryGetProps:
 	hr = folder->GetProps(&rgPropTag, NULL, &cValues, &lpPropValue);
@@ -274,7 +274,6 @@ RetryGetProps:
 		bool aclTableIsGood;
 		CORg(this->CheckACLTable(folder, aclTableIsGood));
 
-		aclTableIsGood = false;
 		if ((aclIsNonCanonical || !aclTableIsGood) && this->FixBadACLs)
 		{
 			this->FixACL(folder);
@@ -411,11 +410,6 @@ void ValidateFolderACL::FixACL(LPMAPIFOLDER folder)
 			}
 		}
 
-		if (acesToRemove > 1)
-		{
-			std::string foo = "foo"; // purely for a breakpoing
-		}
-
 		for (y = 0; y < acesToRemove; y++)
 		{
 			SPropValue propRemove[1] = {0};
@@ -497,6 +491,8 @@ void ValidateFolderACL::FixACL(LPMAPIFOLDER folder)
 		tcout << "     " << pRowsTemp->aRow[x].lpProps[ePR_MEMBER_NAME].Value.lpszA << "," << 
 			pRowsTemp->aRow[x].lpProps[ePR_MEMBER_RIGHTS].Value.l << std::endl;
 	}
+
+	tcout << std::endl;
 
 Cleanup:
 	if (pRowsTemp)

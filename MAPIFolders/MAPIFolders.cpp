@@ -21,7 +21,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		tcout << "fDisplayHelp: " << ua.fDisplayHelp() << std::endl;
 		tcout << "fFixFolderAcl: " << ua.fFixFolderAcl() << std::endl;
 		tcout << "fFixItems: " << ua.fFixItems() << std::endl;
-		tcout << "nScope: " << ua.nScope() << std::endl;
+		tcout << "nScope: " << (short int)ua.nScope() << std::endl;
 		tcout << "pstrFolderPath: ";
 		if (ua.pstrFolderPath())
 			tcout << ua.pstrFolderPath()->c_str() << std::endl;

@@ -110,7 +110,8 @@ LPMAPIFOLDER OperationBase::GetPFRoot(IMAPISession *pSession)
 		cCols,
 		{
 			PR_ENTRYID,
-			PR_DISPLAY_NAME,
+			PR_DISPLAY_NAME_W,
+			PR_DISPLAY_NAME_A,
 			PR_MDB_PROVIDER
 		}
 	};
