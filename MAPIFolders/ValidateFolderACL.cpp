@@ -48,7 +48,7 @@ HRESULT ValidateFolderACL::Initialize(void)
 	HRESULT hr = S_OK;
 	this->psidAnonymous = (PSID)malloc(SECURITY_MAX_SID_SIZE);
 	DWORD dwLength = SECURITY_MAX_SID_SIZE;
-	tcout << "Buffer size:" << dwLength << std::endl;
+
 	if (!this->psidAnonymous)
 	{
 		tcout << "Failed to allocate memory" << std::endl;
