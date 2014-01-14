@@ -22,7 +22,7 @@ SizedSPropTagArray(NUM_COLS, rgPropTag) =
 };
 
 // For comparison later
-std::string strAnonymous = "Anonymous";
+tstring strAnonymous = _T("Anonymous");
 
 struct SavedACEInfo
 {
@@ -362,10 +362,10 @@ void ValidateFolderACL::FixACL(LPMAPIFOLDER folder)
 
 	for (x = 0; x < pRowsBefore->cRows; x++)
 	{
-		tcout << "     " << pRowsBefore->aRow[x].lpProps[ePR_MEMBER_NAME].Value.lpszA << "," << 
+		tcout << "     " << pRowsBefore->aRow[x].lpProps[ePR_MEMBER_NAME].Value.lpszW << "," << 
 			pRowsBefore->aRow[x].lpProps[ePR_MEMBER_RIGHTS].Value.l << std::endl;
 
-		if (strAnonymous == std::string(pRowsBefore->aRow[x].lpProps[ePR_MEMBER_NAME].Value.lpszA))
+		if (strAnonymous == tstring(pRowsBefore->aRow[x].lpProps[ePR_MEMBER_NAME].Value.lpszW))
 		{
 			foundAnonymous = true;
 		}
@@ -488,7 +488,7 @@ void ValidateFolderACL::FixACL(LPMAPIFOLDER folder)
 
 	for (x = 0; x < pRowsTemp->cRows; x++)
 	{
-		tcout << "     " << pRowsTemp->aRow[x].lpProps[ePR_MEMBER_NAME].Value.lpszA << "," << 
+		tcout << "     " << pRowsTemp->aRow[x].lpProps[ePR_MEMBER_NAME].Value.lpszW << "," << 
 			pRowsTemp->aRow[x].lpProps[ePR_MEMBER_RIGHTS].Value.l << std::endl;
 	}
 
