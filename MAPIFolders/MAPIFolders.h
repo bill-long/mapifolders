@@ -1,7 +1,9 @@
 #if defined(UNICODE) || defined(_UNICODE)
 #define tcout std::wcout
+#define _tstricmp _wcsicmp
 #else
 #define tcout std::cout
+#define _tstricmp _stricmp
 #endif
 
 #define CORg(_hr) \

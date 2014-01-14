@@ -14,6 +14,9 @@
 #include <edkguid.h>
 #include <edkmdb.h>
 #include <strsafe.h>
+#include <vector>
+#include <sstream>
+#include <string>
 
 #include "UserArgs.h"
 
@@ -30,9 +33,12 @@ public:
 
 private:
 	LPMAPIFOLDER GetPFRoot(IMAPISession *pSession);
-	LPMAPIFOLDER GetStartingFolder(IMAPISession *pSession);
+	LPMAPIFOLDER OperationBase::GetStartingFolder(IMAPISession *pSession, tstring *calculatedFolderPath);
+	HRESULT OperationBase::GetSubfolderByName(LPMAPIFOLDER parentFolder, tstring folderNameToFind, LPMAPIFOLDER *returnedFolder, tstring *returnedFolderName);
 	void TraverseFolders(CComPtr<IMAPISession> session, LPMAPIFOLDER baseFolder, tstring parentPath);
-	HRESULT BuildServerDN(LPCTSTR szServerName, LPCTSTR szPost, LPTSTR* lpszServerDN);
+	HRESULT BuildServerDN(LPCSTR szServerName, LPCSTR szPost, LPSTR* lpszServerDN);
+	std::vector<tstring> OperationBase::Split(const tstring &s, TCHAR delim);
+	std::vector<tstring> &Split(const tstring &s, TCHAR delim, std::vector<tstring> &elems);
 	LPMAPIFOLDER lpPFRoot;
 	LPMAPIFOLDER lpStartingFolder;
 	LPMDB lpAdminMDB;
