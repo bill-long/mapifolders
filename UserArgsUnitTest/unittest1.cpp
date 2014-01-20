@@ -25,7 +25,7 @@ namespace UnitTests
 		**    A. You may want to check the Parse() or ParseGetActions() results in 2
 		**       i. Parse() just returns whether parsing failed
 		**       ii. ParseGetActions() returns which switches were parsed
-		**    B. You may want to check the method results, e.g. pstrPublicFolder()
+		**    B. You may want to check the method results, e.g. pstrFolderPath()
 		**       i. After Parse() or ParseGetActions(), you can check the result of the folder passed in
 		**       ii. Currently the public folder is the only non-switch argument passed to this utility
 		*/
@@ -97,7 +97,7 @@ namespace UnitTests
 			tstring *pstrArgVal;
 			UserArgs *pua = new UserArgs();
 			Assert::AreEqual<unsigned long>(pua->ParseGetActions(6, argv), 0xF);
-			pstrArgVal = pua->pstrPublicFolder();
+			pstrArgVal = pua->pstrFolderPath();
 			Assert::AreEqual(pwszMyFolder, pstrArgVal->c_str(), true);
 			delete pua;
 		}
@@ -109,7 +109,7 @@ namespace UnitTests
 			 TCHAR *argv[] = {_T("ArgTest"), _T("-checkFolderACL"), _T("-fixFolderACL"), _T("-checkItems"), _T("-fixItems"), _T("-?"), pwszMyFolder};
 			UserArgs *pua = new UserArgs();
 			Assert::AreEqual<unsigned long>(pua->ParseGetActions(7, argv), 0x8000000F);
-			Assert::AreEqual(pwszMyFolder, pua->pstrPublicFolder()->c_str(), true);
+			Assert::AreEqual(pwszMyFolder, pua->pstrFolderPath()->c_str(), true);
 			delete pua;
 		}
 
@@ -120,7 +120,7 @@ namespace UnitTests
 			 TCHAR *argv[] = {_T("ArgTest"), _T("/checkFolderACL"), _T("/fixFolderACL"), _T("/checkItems"), _T("/fixItems"), _T("/?"), pwszMyFolder};
 			UserArgs *pua = new UserArgs();
 			Assert::AreEqual<unsigned long>(pua->ParseGetActions(7, argv), 0x8000000F);
-			Assert::AreEqual(pwszMyFolder, pua->pstrPublicFolder()->c_str(), true);
+			Assert::AreEqual(pwszMyFolder, pua->pstrFolderPath()->c_str(), true);
 			delete pua;
 		}
 
@@ -131,7 +131,7 @@ namespace UnitTests
 			 TCHAR *argv[] = {_T("ArgTest"), _T("/checkFolderACL"), _T("-fixFolderACL"), _T("/checkItems"), _T("-fixItems"), _T("/?"), pwszMyFolder};
 			UserArgs *pua = new UserArgs();
 			Assert::AreEqual<unsigned long>(pua->ParseGetActions(7, argv), 0x8000000F);
-			Assert::AreEqual(pwszMyFolder, pua->pstrPublicFolder()->c_str(), true);
+			Assert::AreEqual(pwszMyFolder, pua->pstrFolderPath()->c_str(), true);
 			delete pua;
 		}
 
@@ -142,7 +142,7 @@ namespace UnitTests
 			 TCHAR *argv[] = {_T("ArgTest"), _T("-checkFolderACL"), _T("/fixFolderACL"), _T("-checkItems"), _T("/fixItems"), _T("-?"), pwszMyFolder};
 			UserArgs *pua = new UserArgs();
 			Assert::AreEqual<unsigned long>(pua->ParseGetActions(7, argv), 0x8000000F);
-			Assert::AreEqual(pwszMyFolder, pua->pstrPublicFolder()->c_str(), true);
+			Assert::AreEqual(pwszMyFolder, pua->pstrFolderPath()->c_str(), true);
 			delete pua;
 		}
 
@@ -226,7 +226,7 @@ namespace UnitTests
 			 TCHAR *argv[] = {_T("ArgTest"), _T("/fixFolderACL"), _T("-checkItems"), _T("/fixItems"), _T("-?"), _T("-checkFolderACL"), pwszMyFolder};
 			UserArgs *pua = new UserArgs();
 			Assert::AreEqual<unsigned long>(pua->ParseGetActions(7, argv), 0x8000000F);
-			Assert::AreEqual(pwszMyFolder, pua->pstrPublicFolder()->c_str(), true);
+			Assert::AreEqual(pwszMyFolder, pua->pstrFolderPath()->c_str(), true);
 			delete pua;
 		}
 
@@ -237,7 +237,7 @@ namespace UnitTests
 			 TCHAR *argv[] = {_T("ArgTest"), _T("-?"), _T("/fixFolderACL"), _T("-checkItems"), _T("/fixItems"), _T("-checkFolderACL"), pwszMyFolder};
 			UserArgs *pua = new UserArgs();
 			Assert::AreEqual<unsigned long>(pua->ParseGetActions(7, argv), 0x8000000F);
-			Assert::AreEqual(pwszMyFolder, pua->pstrPublicFolder()->c_str(), true);
+			Assert::AreEqual(pwszMyFolder, pua->pstrFolderPath()->c_str(), true);
 			delete pua;
 		}
 
@@ -248,7 +248,7 @@ namespace UnitTests
 			 TCHAR *argv[] = {_T("ArgTest"), _T("-?"), _T("/fixFolderACL"), _T("-checkItems"), _T("/fixItems"), _T("-checkFolderACL"), pwszMyFolder};
 			UserArgs *pua = new UserArgs();
 			Assert::AreEqual<unsigned long>(pua->ParseGetActions(7, argv), 0x8000000F);
-			Assert::AreEqual(pwszMyFolder, pua->pstrPublicFolder()->c_str(), true);
+			Assert::AreEqual(pwszMyFolder, pua->pstrFolderPath()->c_str(), true);
 			delete pua;
 		}
 
@@ -289,7 +289,7 @@ namespace UnitTests
 			UserArgs *pua = new UserArgs();
 			pua->Parse(7, argv);
 			pua->Parse(7,argv2);
-			Assert::AreEqual(pwszMyFolder2, pua->pstrPublicFolder()->c_str(), true);
+			Assert::AreEqual(pwszMyFolder2, pua->pstrFolderPath()->c_str(), true);
 			delete pua;
 		}
 

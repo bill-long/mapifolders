@@ -14,22 +14,36 @@
 #include <edkguid.h>
 #include <edkmdb.h>
 #include <strsafe.h>
+#include <vector>
+#include <sstream>
+#include <string>
+
+#include "UserArgs.h"
+
+#define MDB_ONLINE 0x100
 
 class OperationBase
 {
 public:
-	OperationBase();
+	OperationBase(tstring *basePath, UserArgs::ActionScope scope);
 	~OperationBase(void);
 	void DoOperation();
-	virtual void ProcessFolder(LPMAPIFOLDER folder, std::wstring folderPath);
+	virtual void ProcessFolder(LPMAPIFOLDER folder, tstring folderPath);
 	std::string GetStringFromFolderPath(LPMAPIFOLDER folder);
 
 private:
 	LPMAPIFOLDER GetPFRoot(IMAPISession *pSession);
-	void TraverseFolders(CComPtr<IMAPISession> session, LPMAPIFOLDER baseFolder, std::wstring parentPath);
-	HRESULT BuildServerDN(LPCTSTR szServerName, LPCTSTR szPost, LPTSTR* lpszServerDN);
+	LPMAPIFOLDER OperationBase::GetStartingFolder(IMAPISession *pSession, tstring *calculatedFolderPath);
+	HRESULT OperationBase::GetSubfolderByName(LPMAPIFOLDER parentFolder, tstring folderNameToFind, LPMAPIFOLDER *returnedFolder, tstring *returnedFolderName);
+	void TraverseFolders(CComPtr<IMAPISession> session, LPMAPIFOLDER baseFolder, tstring parentPath);
+	HRESULT BuildServerDN(LPCSTR szServerName, LPCSTR szPost, LPSTR* lpszServerDN);
+	std::vector<tstring> OperationBase::Split(const tstring &s, TCHAR delim);
+	std::vector<tstring> &Split(const tstring &s, TCHAR delim, std::vector<tstring> &elems);
 	LPMAPIFOLDER lpPFRoot;
+	LPMAPIFOLDER lpStartingFolder;
 	LPMDB lpAdminMDB;
 	LPMAPISESSION lpSession;
+	tstring *strBasePath;
+	UserArgs::ActionScope nScope;
 };
 

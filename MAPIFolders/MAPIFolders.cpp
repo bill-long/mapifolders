@@ -8,20 +8,25 @@
 
 int _tmain(int argc, _TCHAR* argv[])
 {
+	HRESULT hr = S_OK;
 	UserArgs ua;
 	if (ua.Parse(argc, argv))
 	{
 
 #ifdef DEBUG
 		// Dump parsed args
-		std::wcout << "Parsed successfully." << std::endl;
-		std::wcout << "fCheckFolderAcl: " << ua.fCheckFolderAcl() << std::endl;
-		std::wcout << "fCheckItems: " << ua.fCheckItems() << std::endl;
-		std::wcout << "fDisplayHelp: " << ua.fDisplayHelp() << std::endl;
-		std::wcout << "fFixFolderAcl: " << ua.fFixFolderAcl() << std::endl;
-		std::wcout << "fFixItems: " << ua.fFixItems() << std::endl;
-		std::wcout << "nScope: " << ua.nScope() << std::endl;
-		std::wcout << "pstrFolderPath: " << ua.pstrFolderPath()->c_str() << std::endl;
+		tcout << "Parsed successfully." << std::endl;
+		tcout << "fCheckFolderAcl: " << ua.fCheckFolderAcl() << std::endl;
+		tcout << "fCheckItems: " << ua.fCheckItems() << std::endl;
+		tcout << "fDisplayHelp: " << ua.fDisplayHelp() << std::endl;
+		tcout << "fFixFolderAcl: " << ua.fFixFolderAcl() << std::endl;
+		tcout << "fFixItems: " << ua.fFixItems() << std::endl;
+		tcout << "nScope: " << (short int)ua.nScope() << std::endl;
+		tcout << "pstrFolderPath: ";
+		if (ua.pstrFolderPath())
+			tcout << ua.pstrFolderPath()->c_str() << std::endl;
+		else
+			tcout << "Null" << std::endl;
 #endif
 
 		if(ua.fDisplayHelp())
@@ -32,11 +37,21 @@ int _tmain(int argc, _TCHAR* argv[])
 		{
 			if(ua.fCheckFolderAcl())
 			{
-				ValidateFolderACL *checkACLOp = new ValidateFolderACL(false);
+				ValidateFolderACL *checkACLOp = new ValidateFolderACL(ua.pstrFolderPath(), ua.nScope(), false);
+				CORg(checkACLOp->Initialize());
 				OperationBase *op = checkACLOp;
 				op->DoOperation();
 			}
-			if(ua.fCheckItems() || ua.fFixFolderAcl() || ua.fFixItems())
+
+			if (ua.fFixFolderAcl())
+			{
+				ValidateFolderACL *checkACLOp = new ValidateFolderACL(ua.pstrFolderPath(), ua.nScope(), true);
+				CORg(checkACLOp->Initialize());
+				OperationBase *op = checkACLOp;
+				op->DoOperation();
+			}
+
+			if(ua.fCheckItems() || ua.fFixItems())
 			{
 				std::cerr << "unimplemented feature." << std::endl;
 			}
@@ -50,5 +65,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		ua.ShowHelp();
 	}
 
+Error:
+	tcout << "Finished." << std::endl;
 }
 
