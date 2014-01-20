@@ -24,8 +24,9 @@ public:
 	bool fFixItems() {return (NULL!=(m_actions & FIXITEMS));}
 	bool fDisplayHelp() {return (NULL!=(m_actions & DISPLAYHELP));}
 
-	// Argument value (i.e. public folder, the only value argument) accessor methods
+	// Argument value accessor methods
 	tstring *pstrFolderPath() {return m_pstrFolderPath;}
+	tstring *pstrMailbox() {return m_pstrMailbox;}
 
 	// Enum for the possible scopes for operations
 	enum ActionScope : short int
@@ -99,6 +100,7 @@ private:
 
 	// public folder, scope of action
 	tstring *m_pstrFolderPath;
+	tstring *m_pstrMailbox;
 	ActionScope m_scope;
 	
 
