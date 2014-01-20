@@ -12,6 +12,7 @@ const UserArgs::ArgSwitch UserArgs::rgArgSwitches[_COUNTOFACCEPTEDSWITCHES] =
 	{_T("CheckItems"), _T("Check Items"), false, CHECKITEMS},
 	{_T("FixItems"), _T("Fix Items"), false, FIXITEMS},
 	{_T("Scope"), _T("Action Scope"), true, SCOPE},
+	{_T("Mailbox"), _T("Mailbox"), true, MAILBOX},
 	{_T("?"), _T("Help"), false, DISPLAYHELP},
 };
 
@@ -34,12 +35,19 @@ UserArgs::~UserArgs(void)
 		delete m_pstrFolderPath;
 		m_pstrFolderPath=NULL;
 	}
+
+	if (m_pstrMailbox)
+	{
+		delete m_pstrMailbox;
+		m_pstrMailbox = NULL;
+	}
 }
 
 UserArgs::UserArgs(void)
 {
-	// Initialize _pstrPublicFolder as it is a pointer
+	// Initialize _pstrPublicFolder and _pstrMailbox as it is a pointer
 	 m_pstrFolderPath=NULL;
+	 m_pstrMailbox = NULL;
 	// Default _actions
 	init();
 }
@@ -50,6 +58,9 @@ void UserArgs::init(void)
 	 if(m_pstrFolderPath!=NULL)
 		 delete m_pstrFolderPath;
 	 m_pstrFolderPath=NULL;
+	 if (m_pstrMailbox != NULL)
+		 delete m_pstrMailbox;
+	 m_pstrMailbox = NULL;
 	 m_scope = ActionScope::NONE;
 }
 
@@ -84,7 +95,7 @@ void UserArgs::ShowHelp(TCHAR *msg)
 {
 	if(msg)
 		std::wcout << msg << std::endl;
-	std::wcout << "MAPIFolders [-?] [-CheckFolderACL] [-FixFolderACL] [-CheckItems] [-FixItems] [-Scope:Base|OneLevel|SubTree] [folderName]" << std::endl;
+	std::wcout << "MAPIFolders [-?] [-CheckFolderACL] [-FixFolderACL] [-CheckItems] [-FixItems] [-Scope:Base|OneLevel|SubTree] [-Mailbox:mailbox] [folderName]" << std::endl;
 }
 
 bool UserArgs::Parse(int argc, TCHAR* argv[])
@@ -181,7 +192,6 @@ bool UserArgs::Parse(int argc, TCHAR* argv[])
 				break;
 			case STATE_VALUESWITCH:
 				// Here we have pchCurrent, iCurrChar, and iCurrentArg all set correctly for start of value for this valueswitch
-				// There is only one value switch for this utility, but for expandability, pretend there are many
 				switch(ulCurrentValueSwitch)
 				{
 					case SCOPE:
@@ -193,6 +203,23 @@ bool UserArgs::Parse(int argc, TCHAR* argv[])
 								this->m_scope= rgScopeValues[i].nScopeCode;
 								foundScope=true;
 							}
+						}
+						break;
+					case MAILBOX:
+						if (m_pstrMailbox != NULL)
+						{
+							logError(iCurrentArg, argv[iCurrentArg], ERR_DUPLICATEFOLDER);
+							state = STATE_FAIL;
+						}
+						else
+						{
+							if (m_pstrMailbox)
+							{
+								delete m_pstrMailbox;
+								m_pstrMailbox = NULL;
+							}
+							m_pstrMailbox = new tstring(pchCurrent);
+							state = STATE_ADVANCEARG;
 						}
 						break;
 					default:

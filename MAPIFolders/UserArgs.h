@@ -24,8 +24,9 @@ public:
 	bool fFixItems() {return (NULL!=(m_actions & FIXITEMS));}
 	bool fDisplayHelp() {return (NULL!=(m_actions & DISPLAYHELP));}
 
-	// Argument value (i.e. public folder, the only value argument) accessor methods
+	// Argument value accessor methods
 	tstring *pstrFolderPath() {return m_pstrFolderPath;}
+	tstring *pstrMailbox() {return m_pstrMailbox;}
 
 	// Enum for the possible scopes for operations
 	enum ActionScope : short int
@@ -88,6 +89,7 @@ private:
 	static const unsigned long CHECKITEMS=1<<2;
 	static const unsigned long FIXITEMS=1<<3;
 	static const unsigned long SCOPE=1<<4;	// Not an action, do not add to _actions
+	static const unsigned long MAILBOX = 1<<5; // Not an action
 	static const unsigned long DISPLAYHELP=1<<31;	// User requested help in a valid syntax
 
 	// Error codes
@@ -97,8 +99,9 @@ private:
 	static const unsigned long ERR_EXPECTEDSWITCHVALUE=1<<2;
 	static const unsigned long ERR_INVALIDSTATE=1<<3;
 
-	// public folder, scope of action
+	// folder, mailbox (if any), scope of action
 	tstring *m_pstrFolderPath;
+	tstring *m_pstrMailbox;
 	ActionScope m_scope;
 	
 
