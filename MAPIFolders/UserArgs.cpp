@@ -9,6 +9,10 @@ const UserArgs::ArgSwitch UserArgs::rgArgSwitches[_COUNTOFACCEPTEDSWITCHES] =
 {
 	{_T("CheckFolderACL"), _T("Check Folder ACL"), false, CHECKFOLDERACLS},
 	{_T("FixFolderACL"), _T("Fix Folder ACL"), false, FIXFOLDERACLS},
+	{_T("AddFolderPermission"), _T("Add Folder Permission"), false, ADDFOLDERPERMISSION},
+	{_T("RemoveFolderPermission"), _T("Remove Folder Permission"), false, REMOVEFOLDERPERMISSION},
+	{_T("User"), _T("User to grant/remove permissions"), true, USER},
+	{_T("AccessRights"), _T("Access rights to set"), true, RIGHTS},
 	{_T("CheckItems"), _T("Check Items"), false, CHECKITEMS},
 	{_T("FixItems"), _T("Fix Items"), false, FIXITEMS},
 	{_T("Scope"), _T("Action Scope"), true, SCOPE},
@@ -48,6 +52,8 @@ UserArgs::UserArgs(void)
 	// Initialize _pstrPublicFolder and _pstrMailbox as it is a pointer
 	 m_pstrFolderPath=NULL;
 	 m_pstrMailbox = NULL;
+	 m_pstrUser = NULL;
+	 m_pstrRights = NULL;
 	// Default _actions
 	init();
 }
@@ -61,6 +67,12 @@ void UserArgs::init(void)
 	 if (m_pstrMailbox != NULL)
 		 delete m_pstrMailbox;
 	 m_pstrMailbox = NULL;
+	 if (m_pstrUser != NULL)
+		 delete m_pstrUser;
+	 m_pstrUser = NULL;
+	 if (m_pstrRights != NULL)
+		 delete m_pstrRights;
+	 m_pstrRights = NULL;
 	 m_scope = ActionScope::NONE;
 }
 
@@ -95,7 +107,7 @@ void UserArgs::ShowHelp(TCHAR *msg)
 {
 	if(msg)
 		std::wcout << msg << std::endl;
-	std::wcout << "MAPIFolders [-?] [-CheckFolderACL] [-FixFolderACL] [-CheckItems] [-FixItems] [-Scope:Base|OneLevel|SubTree] [-Mailbox:mailbox] [folderName]" << std::endl;
+	std::wcout << "MAPIFolders [-?] [-CheckFolderACL] [-FixFolderACL] [-AddFolderPermission -User:name -AccessRights:role] [-RemoveFolderPermission -User:name] [-CheckItems] [-FixItems] [-Scope:Base|OneLevel|SubTree] [-Mailbox:mailbox] [folderName]" << std::endl;
 }
 
 bool UserArgs::Parse(int argc, TCHAR* argv[])
@@ -112,7 +124,7 @@ bool UserArgs::Parse(int argc, TCHAR* argv[])
 	{
 		// At this point, we have a starting token.
 		PARSESTATE state = STATE_NEWTOKEN;
-		bool foundSimpleSwitch, foundValueSwitch, foundScope;
+		bool foundSimpleSwitch, foundValueSwitch, foundScope = false;
 		unsigned long ulCurrentValueSwitch=NULL;	// used when a valueswitch is found and we are looking for value
 		do
 		{
@@ -142,9 +154,18 @@ bool UserArgs::Parse(int argc, TCHAR* argv[])
 						if(0==_tcsnicmp(pchCurrent, rgArgSwitches[i].pszSwitch, FILENAME_MAX))	// arbitrary max length
 						{
 							// matched a switch
-							// Add to actions
-							m_actions |= rgArgSwitches[i].flagAction;
-							foundSimpleSwitch=true;
+							// Only one action allowed for now
+							if (m_actions != 0)
+							{
+								logError(iCurrentArg, argv[iCurrentArg], ERR_DUPLICATEACTION);
+								state = STATE_FAIL;
+							}
+							else
+							{
+								// Add to actions
+								m_actions |= rgArgSwitches[i].flagAction;
+								foundSimpleSwitch=true;
+							}
 							break;
 						} // if (0==_wcsnicmp(pchCurrent, rgArgSwitches[i].pszSwitch, ...
 					} // if !rgArgSwitches[i].fHasValue
@@ -204,11 +225,19 @@ bool UserArgs::Parse(int argc, TCHAR* argv[])
 								foundScope=true;
 							}
 						}
+						if (foundScope)
+							state = STATE_ADVANCEARG;
+						else
+						{
+							logError(iCurrentArg, argv[iCurrentArg], ERR_EXPECTEDSWITCHVALUE);
+							state=STATE_FAIL;
+						}
+
 						break;
 					case MAILBOX:
 						if (m_pstrMailbox != NULL)
 						{
-							logError(iCurrentArg, argv[iCurrentArg], ERR_DUPLICATEFOLDER);
+							logError(iCurrentArg, argv[iCurrentArg], ERR_DUPLICATEMAILBOX);
 							state = STATE_FAIL;
 						}
 						else
@@ -222,19 +251,56 @@ bool UserArgs::Parse(int argc, TCHAR* argv[])
 							state = STATE_ADVANCEARG;
 						}
 						break;
+					case USER:
+						if (m_pstrUser != NULL)
+						{
+							logError(iCurrentArg, argv[iCurrentArg], ERR_DUPLICATEUSER);
+							state = STATE_FAIL;
+						}
+						else if (!(fAddFolderPermission() || fRemoveFolderPermission()))
+						{
+							logError(iCurrentArg, argv[iCurrentArg], ERR_SWITCHNOTVALIDFORTHISACTION);
+							state = STATE_FAIL;
+						}
+						else
+						{
+							if (m_pstrUser)
+							{
+								delete m_pstrUser;
+								m_pstrUser = NULL;
+							}
+							m_pstrUser = new tstring(pchCurrent);
+							state = STATE_ADVANCEARG;
+						}
+						break;
+					case RIGHTS:
+						if (m_pstrRights != NULL)
+						{
+							logError(iCurrentArg, argv[iCurrentArg], ERR_DUPLICATERIGHTS);
+							state = STATE_FAIL;
+						}
+						else if (!(fAddFolderPermission()))
+						{
+							logError(iCurrentArg, argv[iCurrentArg], ERR_SWITCHNOTVALIDFORTHISACTION);
+							state = STATE_FAIL;
+						}
+						else
+						{
+							if (m_pstrRights)
+							{
+								delete m_pstrRights;
+								m_pstrRights = NULL;
+							}
+							m_pstrRights = new tstring(pchCurrent);
+							state = STATE_ADVANCEARG;
+						}
+						break;
 					default:
 						logError(iCurrentArg, argv[iCurrentArg], ERR_INVALIDSTATE);
 						break;
 				}
-				if(foundScope)
-				{
-					state=STATE_ADVANCEARG;
-				}
-				else
-				{
-					logError(iCurrentArg, argv[iCurrentArg], ERR_EXPECTEDSWITCHVALUE);
-					state=STATE_FAIL;
-				}
+
+
 				break;
 			case STATE_VALUE:
 				if(m_pstrFolderPath!=NULL)
@@ -276,6 +342,16 @@ bool UserArgs::Parse(int argc, TCHAR* argv[])
 				break;
 			}
 		} while(state!=STATE_DONE);
+
+		if (fAddFolderPermission() && (!m_pstrUser || !m_pstrRights))
+		{
+			retVal = 0;
+		}
+
+		if (fRemoveFolderPermission() && !m_pstrUser)
+		{
+			retVal = 0;
+		}
 	}
 	return retVal;
 }
