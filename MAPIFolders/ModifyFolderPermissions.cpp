@@ -16,7 +16,10 @@ HRESULT ModifyFolderPermissions::Initialize(void)
 	HRESULT hr = S_OK;
 	LPADRBOOK lpAdrBook = NULL;
 	LPADRLIST lpAdrList = NULL;
+	LPENTRYID lpEID = NULL;
 
+	CORg(OperationBase::Initialize());
+	
 	// Resolve the user string
 	this->resolvedUserEID = NULL;
 	if (_tstricmp(strAnonymous.c_str(), this->pstrUserString->c_str()) == 0)
@@ -30,7 +33,7 @@ HRESULT ModifyFolderPermissions::Initialize(void)
 
 		this->pstrUserString = new tstring(_T("Anonymous"));
 	}
-	else if (_tstricmp(strDefault.c_str(), this->pstrUserString->c_str()))
+	else if (_tstricmp(strDefault.c_str(), this->pstrUserString->c_str()) == 0)
 	{
 		if (this->remove)
 		{
@@ -46,11 +49,10 @@ HRESULT ModifyFolderPermissions::Initialize(void)
 		enum
 		{
 			NAME,
-			EID,
 			NUM_RECIP_PROPS
 		};
 
-		CORg(lpSession->OpenAddressBook(NULL, NULL, MAPI_ACCESS_READ, &lpAdrBook));
+		CORg(lpSession->OpenAddressBook(NULL, NULL, NULL, &lpAdrBook));
 		HrAllocAdrList(NUM_RECIP_PROPS,&lpAdrList);
 		if (lpAdrList)
 		{
@@ -61,9 +63,7 @@ HRESULT ModifyFolderPermissions::Initialize(void)
 
 			// Set the SPropValue members == the desired values.
 			lpAdrList->aEntries[0].rgPropVals[NAME].ulPropTag = PR_DISPLAY_NAME;
-			lpAdrList->aEntries[0].rgPropVals[NAME].Value.LPSZ = (LPTSTR) this->pstrUserString;
-
-			lpAdrList->aEntries[0].rgPropVals[EID].ulPropTag = PR_ENTRYID;
+			lpAdrList->aEntries[0].rgPropVals[NAME].Value.LPSZ = (LPTSTR) this->pstrUserString->c_str();
 
 			CORg(lpAdrBook->ResolveName(
 				0L,
@@ -73,31 +73,49 @@ HRESULT ModifyFolderPermissions::Initialize(void)
 
 			CORg(MAPIAllocateBuffer(sizeof(SBinary), (LPVOID*) &this->resolvedUserEID));
 			ZeroMemory(this->resolvedUserEID, sizeof(SBinary));
-			CORg(this->CopySBinary(this->resolvedUserEID, &lpAdrList->aEntries[0].rgPropVals[EID].Value.bin, NULL));
+			bool foundEID = false;
+			for (UINT x = 0; x < lpAdrList->aEntries[0].cValues; x++)
+			{
+				if (lpAdrList->aEntries[0].rgPropVals[x].ulPropTag == PR_ENTRYID)
+				{
+					CORg(this->CopySBinary(this->resolvedUserEID, &lpAdrList->aEntries[0].rgPropVals[x].Value.bin, NULL));
+					foundEID = true;
+					break;
+				}
+			}
+
+			if (!foundEID)
+			{
+				hr = MAPI_E_NOT_FOUND;
+				goto Error;
+			}
 		}
 	}
 
 	// Resolve the rights string
-	if (_tcsicmp(this->pstrRightsString->c_str(), _T("Owner")))
-		this->rights = ROLE_OWNER;
-	else if (_tcsicmp(this->pstrRightsString->c_str(), _T("PublishingEditor")))
-		this->rights = ROLE_PUBLISH_EDITOR;
-	else if (_tcsicmp(this->pstrRightsString->c_str(), _T("Editor")))
-		this->rights = ROLE_EDITOR;
-	else if (_tcsicmp(this->pstrRightsString->c_str(), _T("PublishingAuthor")))
-		this->rights = ROLE_PUBLISH_AUTHOR;
-	else if (_tcsicmp(this->pstrRightsString->c_str(), _T("Author")))
-		this->rights = ROLE_AUTHOR;
-	else if (_tcsicmp(this->pstrRightsString->c_str(), _T("NonEditingAuthor")))
-		this->rights = ROLE_NONEDITING_AUTHOR;
-	else if (_tcsicmp(this->pstrRightsString->c_str(), _T("Reviewer")))
-		this->rights = ROLE_REVIEWER;
-	else if (_tcsicmp(this->pstrRightsString->c_str(), _T("Contributor")))
-		this->rights = ROLE_CONTRIBUTOR;
-	else if (_tcsicmp(this->pstrRightsString->c_str(), _T("None")))
-		this->rights = ROLE_NONE;
-	else if (_tcsicmp(this->pstrRightsString->c_str(), _T("All")))
-		this->rights = ROLE_OWNER | RIGHTS_FOLDER_CONTACT;
+	if (this->pstrRightsString)
+	{
+		if (_tcsicmp(this->pstrRightsString->c_str(), _T("Owner")) == 0)
+			this->rights = ROLE_OWNER;
+		else if (_tcsicmp(this->pstrRightsString->c_str(), _T("PublishingEditor")) == 0)
+			this->rights = ROLE_PUBLISH_EDITOR;
+		else if (_tcsicmp(this->pstrRightsString->c_str(), _T("Editor")) == 0)
+			this->rights = ROLE_EDITOR;
+		else if (_tcsicmp(this->pstrRightsString->c_str(), _T("PublishingAuthor")) == 0)
+			this->rights = ROLE_PUBLISH_AUTHOR;
+		else if (_tcsicmp(this->pstrRightsString->c_str(), _T("Author")) == 0)
+			this->rights = ROLE_AUTHOR;
+		else if (_tcsicmp(this->pstrRightsString->c_str(), _T("NonEditingAuthor")) == 0)
+			this->rights = ROLE_NONEDITING_AUTHOR;
+		else if (_tcsicmp(this->pstrRightsString->c_str(), _T("Reviewer")) == 0)
+			this->rights = ROLE_REVIEWER;
+		else if (_tcsicmp(this->pstrRightsString->c_str(), _T("Contributor")) == 0)
+			this->rights = ROLE_CONTRIBUTOR;
+		else if (_tcsicmp(this->pstrRightsString->c_str(), _T("None")) == 0)
+			this->rights = ROLE_NONE;
+		else if (_tcsicmp(this->pstrRightsString->c_str(), _T("All")) == 0)
+			this->rights = ROLE_OWNER | RIGHTS_FOLDER_CONTACT;
+	}
 
 Cleanup:
 	if (lpAdrList)
@@ -118,7 +136,6 @@ void ModifyFolderPermissions::ProcessFolder(LPMAPIFOLDER folder, tstring folderP
 	LPMAPITABLE lpMapiTable = NULL;
 	ULONG lpulRowCount = NULL;
 	LPSRowSet pRows = NULL;
-	SPropValue   prop[1] = {0};
 	ROWLIST      rowList  = {0};
 	UINT x = 0;
 
@@ -135,7 +152,7 @@ void ModifyFolderPermissions::ProcessFolder(LPMAPIFOLDER folder, tstring folderP
 		if (this->resolvedUserEID == NULL)
 		{
 			// Must be Default or Anonymous, so match on the name
-			if (pstrUserString->compare(pRows->aRow[x].lpProps[ePR_MEMBER_NAME].Value.lpszW) == 0)
+			if (_tcsicmp(pstrUserString->c_str(), pRows->aRow[x].lpProps[ePR_MEMBER_NAME].Value.lpszW) == 0)
 			{
 				found = true;
 			}
@@ -158,6 +175,7 @@ void ModifyFolderPermissions::ProcessFolder(LPMAPIFOLDER folder, tstring folderP
 	{
 		if (this->remove)
 		{
+			SPropValue   prop[1] = {0};
 			prop[0].ulPropTag  = PR_MEMBER_ID;
 			prop[0].Value.bin.cb = pRows -> aRow[x].lpProps[ePR_MEMBER_ID].Value.bin.cb;
 			prop[0].Value.bin.lpb = (BYTE*)pRows -> aRow[x].lpProps[ePR_MEMBER_ID].Value.bin.lpb;
@@ -170,6 +188,7 @@ void ModifyFolderPermissions::ProcessFolder(LPMAPIFOLDER folder, tstring folderP
 		}
 		else
 		{
+			SPropValue   prop[2] = {0};
 			prop[0].ulPropTag  = PR_MEMBER_ID;
 			prop[0].Value.bin.cb = pRows -> aRow[x].lpProps[ePR_MEMBER_ID].Value.bin.cb;
 			prop[0].Value.bin.lpb = (BYTE*)pRows -> aRow[x].lpProps[ePR_MEMBER_ID].Value.bin.lpb;
@@ -181,7 +200,7 @@ void ModifyFolderPermissions::ProcessFolder(LPMAPIFOLDER folder, tstring folderP
 			rowList.aEntries->cValues  = 2;
 			rowList.aEntries->rgPropVals = &prop[0];
      
-			hr = lpExchModTbl->ModifyTable(0, &rowList);
+			CORg(lpExchModTbl->ModifyTable(0, &rowList));
 		}
 	}
 	else
@@ -192,6 +211,7 @@ void ModifyFolderPermissions::ProcessFolder(LPMAPIFOLDER folder, tstring folderP
 		}
 		else
 		{
+			SPropValue   prop[2] = {0};
 			prop[0].ulPropTag  = PR_MEMBER_ENTRYID;
 			prop[0].Value.bin.cb = resolvedUserEID->cb;
 			prop[0].Value.bin.lpb = resolvedUserEID->lpb;
@@ -203,7 +223,7 @@ void ModifyFolderPermissions::ProcessFolder(LPMAPIFOLDER folder, tstring folderP
 			rowList.aEntries->cValues  = 2;
 			rowList.aEntries->rgPropVals = &prop[0]; 
 
-			hr = lpExchModTbl->ModifyTable(0, &rowList);
+			CORg(lpExchModTbl->ModifyTable(0, &rowList));
 		}
 	}
 

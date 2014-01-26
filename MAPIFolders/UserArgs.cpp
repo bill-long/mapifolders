@@ -352,6 +352,16 @@ bool UserArgs::Parse(int argc, TCHAR* argv[])
 		{
 			retVal = 0;
 		}
+
+		// If scope is not specified, then it is Base by default
+		// But if a folder is not specified, then Base is the root
+		// We should not modify the root, therefore when scope is
+		// Base, folder MUST be specified.
+		if (nScope() < 2 && !m_pstrFolderPath)
+		{
+			logError(0, _T("If scope is Base, a folder must be specified."), 0);
+			retVal = 0;
+		}
 	}
 	return retVal;
 }

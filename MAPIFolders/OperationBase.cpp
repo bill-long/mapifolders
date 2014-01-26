@@ -44,15 +44,14 @@ Error:
 	return NULL;
 }
 
-
-void OperationBase::DoOperation()
+HRESULT OperationBase::Initialize(void)
 {
 	HRESULT hr = S_OK;
 	lpAdminMDB = NULL;
 	lpRootFolder = NULL;
 	lpStartingFolder = NULL;
 	lpSession = NULL;
-	tstring startingPath(_T(""));
+	startingPath = tstring(_T(""));
 
 	MAPIINIT_0  MAPIINIT= { 0, MAPI_MULTITHREAD_NOTIFICATIONS};
 
@@ -78,18 +77,24 @@ void OperationBase::DoOperation()
 		goto Error;
 	}
 
+Cleanup:
+	// Don't release anything here, we need this stuff to run the operation
+	return hr;
+Error:
+	goto Cleanup;
+}
+
+void OperationBase::DoOperation()
+{
 	TraverseFolders(lpSession, lpStartingFolder, startingPath);
 
-Cleanup:
+	// Now we can release stuff
 	if (lpRootFolder)
 		lpRootFolder->Release();
 	if (lpAdminMDB)
 		lpAdminMDB->Release();
 	if (lpSession)
 		lpSession->Release();
-	return;
-Error:
-	goto Cleanup;
 }
 
 LPMAPIFOLDER OperationBase::GetMailboxRoot(IMAPISession *pSession)

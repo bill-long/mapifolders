@@ -56,6 +56,22 @@ int _tmain(int argc, _TCHAR* argv[])
 				op->DoOperation();
 			}
 
+			if (ua.fAddFolderPermission())
+			{
+				ModifyFolderPermissions *modifyPermsOp = new ModifyFolderPermissions(ua.pstrFolderPath(), ua.pstrMailbox(), ua.nScope(), false, ua.pstrUser(), ua.pstrRights());
+				CORg(modifyPermsOp->Initialize());
+				OperationBase *op = modifyPermsOp;
+				op->DoOperation();
+			}
+
+			if (ua.fRemoveFolderPermission())
+			{
+				ModifyFolderPermissions *modifyPermsOp = new ModifyFolderPermissions(ua.pstrFolderPath(), ua.pstrMailbox(), ua.nScope(), true, ua.pstrUser(), ua.pstrRights());
+				CORg(modifyPermsOp->Initialize());
+				OperationBase *op = modifyPermsOp;
+				op->DoOperation();
+			}
+
 			if(ua.fCheckItems() || ua.fFixItems())
 			{
 				std::cerr << "unimplemented feature." << std::endl;

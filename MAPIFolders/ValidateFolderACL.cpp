@@ -27,6 +27,8 @@ HRESULT ValidateFolderACL::Initialize(void)
 	this->psidAnonymous = (PSID)malloc(SECURITY_MAX_SID_SIZE);
 	DWORD dwLength = SECURITY_MAX_SID_SIZE;
 
+	CORg(OperationBase::Initialize());
+
 	if (!this->psidAnonymous)
 	{
 		tcout << "Failed to allocate memory" << std::endl;

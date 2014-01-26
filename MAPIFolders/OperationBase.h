@@ -27,6 +27,7 @@ class OperationBase
 public:
 	OperationBase(tstring *basePath, tstring *mailbox, UserArgs::ActionScope scope);
 	~OperationBase(void);
+	HRESULT OperationBase::Initialize(void);
 	void DoOperation();
 	virtual void ProcessFolder(LPMAPIFOLDER folder, tstring folderPath);
 	std::string GetStringFromFolderPath(LPMAPIFOLDER folder);
@@ -45,6 +46,7 @@ private:
 	std::vector<tstring> &Split(const tstring &s, TCHAR delim, std::vector<tstring> &elems);
 	LPMAPIFOLDER lpRootFolder;
 	LPMAPIFOLDER lpStartingFolder;
+	tstring startingPath;
 	LPMDB lpAdminMDB;
 	tstring *strBasePath;
 	tstring *strMailbox;

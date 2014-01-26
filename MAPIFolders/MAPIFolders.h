@@ -19,6 +19,7 @@
 
 #include "OperationBase.h"
 #include "ValidateFolderACL.h"
+#include "ModifyFolderPermissions.h"
 
 enum {
     ePR_MEMBER_ENTRYID, 
