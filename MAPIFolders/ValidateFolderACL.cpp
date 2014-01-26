@@ -259,6 +259,8 @@ RetryGetProps:
 	}
 
 Cleanup:
+	if (lpPropValue)
+		MAPIFreeBuffer(lpPropValue);
 	return;
 Error:
 	goto Cleanup;
@@ -277,7 +279,7 @@ HRESULT ValidateFolderACL::CheckACLTable(LPMAPIFOLDER folder, bool &aclTableIsGo
 
 	CORg(folder->OpenProperty(PR_ACL_TABLE, &IID_IExchangeModifyTable, 0, MAPI_DEFERRED_ERRORS, (LPUNKNOWN*)&lpExchModTbl));
 	CORg(lpExchModTbl->GetTable(0, &lpMapiTable));
-	CORg(lpMapiTable->SetColumns((LPSPropTagArray)&rgAclTablePropTag, 0));
+	CORg(lpMapiTable->SetColumns((LPSPropTagArray)&rgAclTablePropTags, 0));
 	CORg(HrQueryAllRows(lpMapiTable, NULL, NULL, NULL, NULL, &pRows));
 
 	// Use a nested loop to check for duplicate entries
@@ -333,7 +335,7 @@ void ValidateFolderACL::FixACL(LPMAPIFOLDER folder)
 
 	CORg(folder->OpenProperty(PR_ACL_TABLE, &IID_IExchangeModifyTable, 0, MAPI_DEFERRED_ERRORS, (LPUNKNOWN*)&lpExchModTbl));
 	CORg(lpExchModTbl->GetTable(0, &lpMapiTable));
-	CORg(lpMapiTable->SetColumns((LPSPropTagArray)&rgAclTablePropTag, 0));
+	CORg(lpMapiTable->SetColumns((LPSPropTagArray)&rgAclTablePropTags, 0));
 	CORg(HrQueryAllRows(lpMapiTable, NULL, NULL, NULL, NULL, &pRowsBefore));
 
 	tcout << std::endl << "     ACL table before changes:" << std::endl;
@@ -466,7 +468,7 @@ void ValidateFolderACL::FixACL(LPMAPIFOLDER folder)
 
 	CORg(folder->OpenProperty(PR_ACL_TABLE, &IID_IExchangeModifyTable, 0, MAPI_DEFERRED_ERRORS, (LPUNKNOWN*)&lpExchModTbl));
 	CORg(lpExchModTbl->GetTable(0, &lpMapiTable));
-	CORg(lpMapiTable->SetColumns((LPSPropTagArray)&rgAclTablePropTag, 0));
+	CORg(lpMapiTable->SetColumns((LPSPropTagArray)&rgAclTablePropTags, 0));
 	CORg(HrQueryAllRows(lpMapiTable, NULL, NULL, NULL, NULL, &pRowsTemp));
 	tcout << std::endl << "     ACL table after changes:" << std::endl;
 

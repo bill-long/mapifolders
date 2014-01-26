@@ -9,20 +9,6 @@ OperationBase::OperationBase(tstring *pstrBasePath, tstring *pstrMailbox, UserAr
 	this->strBasePath = pstrBasePath;
 	this->strMailbox = pstrMailbox;
 	this->nScope = nScope;
-
-	SizedSPropTagArray(NUM_COLS, rgAclTablePropTag) =
-	{
-		NUM_COLS,
-		{
-			PR_MEMBER_ENTRYID,  // Unique across directory.
-			PR_MEMBER_RIGHTS,  
-			PR_MEMBER_ID,       // Unique within ACL table. 
-			PR_MEMBER_NAME,     // Display name.
-		}
-	};
-
-	strAnonymous = _T("Anonymous");
-	strDefault = _T("Default");
 }
 
 

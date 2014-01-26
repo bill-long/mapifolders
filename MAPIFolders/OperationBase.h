@@ -33,9 +33,6 @@ public:
 	HRESULT OperationBase::CopySBinary(_Out_ LPSBinary psbDest, _In_ const LPSBinary psbSrc, _In_ LPVOID lpParent);
 	bool OperationBase::IsEntryIdEqual(SBinary a, SBinary b);
 	LPMAPISESSION lpSession;
-	LPSPropTagArray rgAclTablePropTag;
-	tstring strAnonymous;
-	tstring strDefault;
 
 private:
 	LPMAPIFOLDER GetPFRoot(IMAPISession *pSession);
@@ -53,13 +50,4 @@ private:
 	tstring *strMailbox;
 	UserArgs::ActionScope nScope;
 };
-
-enum {
-    ePR_MEMBER_ENTRYID, 
-    ePR_MEMBER_RIGHTS,  
-    ePR_MEMBER_ID, 
-    ePR_MEMBER_NAME, 
-    NUM_COLS
-};
-
 

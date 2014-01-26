@@ -19,3 +19,25 @@
 
 #include "OperationBase.h"
 #include "ValidateFolderACL.h"
+
+enum {
+    ePR_MEMBER_ENTRYID, 
+    ePR_MEMBER_RIGHTS,  
+    ePR_MEMBER_ID, 
+    ePR_MEMBER_NAME, 
+    NUM_COLS
+};
+
+static const SizedSPropTagArray(NUM_COLS, rgAclTablePropTags) =
+{
+	NUM_COLS,
+	{
+		PR_MEMBER_ENTRYID,  // Unique across directory.
+		PR_MEMBER_RIGHTS,  
+		PR_MEMBER_ID,       // Unique within ACL table. 
+		PR_MEMBER_NAME,     // Display name.
+	}
+};
+
+static const tstring strAnonymous = _T("Anonymous");
+static const tstring strDefault = _T("Default");

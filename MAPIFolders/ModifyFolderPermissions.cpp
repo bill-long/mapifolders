@@ -126,7 +126,7 @@ void ModifyFolderPermissions::ProcessFolder(LPMAPIFOLDER folder, tstring folderP
 
 	CORg(folder->OpenProperty(PR_ACL_TABLE, &IID_IExchangeModifyTable, 0, MAPI_DEFERRED_ERRORS, (LPUNKNOWN*)&lpExchModTbl));
 	CORg(lpExchModTbl->GetTable(0, &lpMapiTable));
-	CORg(lpMapiTable->SetColumns((LPSPropTagArray)&rgAclTablePropTag, 0));
+	CORg(lpMapiTable->SetColumns((LPSPropTagArray)&rgAclTablePropTags, 0));
 	CORg(HrQueryAllRows(lpMapiTable, NULL, NULL, NULL, NULL, &pRows));
 
 	bool found = false;

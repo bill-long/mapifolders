@@ -22,7 +22,11 @@ int _tmain(int argc, _TCHAR* argv[])
 		tcout << "fFixFolderAcl: " << ua.fFixFolderAcl() << std::endl;
 		tcout << "fFixItems: " << ua.fFixItems() << std::endl;
 		tcout << "nScope: " << (short int)ua.nScope() << std::endl;
-		tcout << "pstrMailbox: " << ua.pstrMailbox()->c_str() << std::endl;
+		tcout << "pstrMailbox: " ;
+		if (ua.pstrMailbox())
+			tcout << ua.pstrMailbox()->c_str() << std::endl;
+		else
+			tcout << "Null" << std::endl;
 		tcout << "pstrFolderPath: ";
 		if (ua.pstrFolderPath())
 			tcout << ua.pstrFolderPath()->c_str() << std::endl;
