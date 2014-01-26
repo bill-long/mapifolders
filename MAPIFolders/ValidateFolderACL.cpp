@@ -2,28 +2,6 @@
 #include "ValidateFolderACL.h"
 #include "MAPIFolders.h"
 
-enum {
-    ePR_MEMBER_ENTRYID, 
-    ePR_MEMBER_RIGHTS,  
-    ePR_MEMBER_ID, 
-    ePR_MEMBER_NAME, 
-    NUM_COLS
-};
-
-SizedSPropTagArray(NUM_COLS, rgPropTag) =
-{
-    NUM_COLS,
-    {
-        PR_MEMBER_ENTRYID,  // Unique across directory.
-        PR_MEMBER_RIGHTS,  
-        PR_MEMBER_ID,       // Unique within ACL table. 
-        PR_MEMBER_NAME,     // Display name.
-    }
-};
-
-// For comparison later
-tstring strAnonymous = _T("Anonymous");
-
 struct SavedACEInfo
 {
 	SBinary entryID;
@@ -31,8 +9,8 @@ struct SavedACEInfo
 	long accessRights;
 };
 
-ValidateFolderACL::ValidateFolderACL(tstring *pstrBasePath, UserArgs::ActionScope nScope, bool fixBadACLs)
-	:OperationBase(pstrBasePath, nScope)
+ValidateFolderACL::ValidateFolderACL(tstring *pstrBasePath, tstring *pstrMailbox, UserArgs::ActionScope nScope, bool fixBadACLs)
+	:OperationBase(pstrBasePath, pstrMailbox, nScope)
 {
 	this->FixBadACLs = fixBadACLs;
 	this->IsInitialized = false;
@@ -299,7 +277,7 @@ HRESULT ValidateFolderACL::CheckACLTable(LPMAPIFOLDER folder, bool &aclTableIsGo
 
 	CORg(folder->OpenProperty(PR_ACL_TABLE, &IID_IExchangeModifyTable, 0, MAPI_DEFERRED_ERRORS, (LPUNKNOWN*)&lpExchModTbl));
 	CORg(lpExchModTbl->GetTable(0, &lpMapiTable));
-	CORg(lpMapiTable->SetColumns((LPSPropTagArray)&rgPropTag, 0));
+	CORg(lpMapiTable->SetColumns((LPSPropTagArray)&rgAclTablePropTag, 0));
 	CORg(HrQueryAllRows(lpMapiTable, NULL, NULL, NULL, NULL, &pRows));
 
 	// Use a nested loop to check for duplicate entries
@@ -355,7 +333,7 @@ void ValidateFolderACL::FixACL(LPMAPIFOLDER folder)
 
 	CORg(folder->OpenProperty(PR_ACL_TABLE, &IID_IExchangeModifyTable, 0, MAPI_DEFERRED_ERRORS, (LPUNKNOWN*)&lpExchModTbl));
 	CORg(lpExchModTbl->GetTable(0, &lpMapiTable));
-	CORg(lpMapiTable->SetColumns((LPSPropTagArray)&rgPropTag, 0));
+	CORg(lpMapiTable->SetColumns((LPSPropTagArray)&rgAclTablePropTag, 0));
 	CORg(HrQueryAllRows(lpMapiTable, NULL, NULL, NULL, NULL, &pRowsBefore));
 
 	tcout << std::endl << "     ACL table before changes:" << std::endl;
@@ -393,6 +371,12 @@ void ValidateFolderACL::FixACL(LPMAPIFOLDER folder)
 				savedACEs[savedACECount].memberID.lpb = pRowsBefore->aRow[x].lpProps[ePR_MEMBER_ID].Value.bin.lpb;
 				savedACEs[savedACECount].accessRights = pRowsBefore->aRow[x].lpProps[ePR_MEMBER_RIGHTS].Value.l;
 				savedACECount++;
+
+				if (savedACECount > 500)
+				{
+					tcout << "     Error: ACL table has too many entries." << std::endl;
+					goto Error;
+				}
 			}
 		}
 	}
@@ -482,7 +466,7 @@ void ValidateFolderACL::FixACL(LPMAPIFOLDER folder)
 
 	CORg(folder->OpenProperty(PR_ACL_TABLE, &IID_IExchangeModifyTable, 0, MAPI_DEFERRED_ERRORS, (LPUNKNOWN*)&lpExchModTbl));
 	CORg(lpExchModTbl->GetTable(0, &lpMapiTable));
-	CORg(lpMapiTable->SetColumns((LPSPropTagArray)&rgPropTag, 0));
+	CORg(lpMapiTable->SetColumns((LPSPropTagArray)&rgAclTablePropTag, 0));
 	CORg(HrQueryAllRows(lpMapiTable, NULL, NULL, NULL, NULL, &pRowsTemp));
 	tcout << std::endl << "     ACL table after changes:" << std::endl;
 
@@ -507,12 +491,4 @@ Cleanup:
 	return;
 Error:
 	goto Cleanup;
-}
-
-bool ValidateFolderACL::IsEntryIdEqual(SBinary a, SBinary b)
-{
-	if (a.cb != b.cb)
-		return false;
-
-	return (!memcmp(a.lpb, b.lpb, a.cb));
 }

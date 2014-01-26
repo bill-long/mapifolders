@@ -3,7 +3,7 @@
 #include <iostream>
 #include <tchar.h>
 
-#define _COUNTOFACCEPTEDSWITCHES (6)
+#define _COUNTOFACCEPTEDSWITCHES (7)
 #define _COUNTOFSCOPES (3)
 
 typedef std::basic_string<TCHAR> tstring;

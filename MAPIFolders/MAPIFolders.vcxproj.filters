@@ -36,6 +36,9 @@
     <ClInclude Include="UserArgs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ModifyFolderPermissions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -57,6 +60,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="UserArgs.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ModifyFolderPermissions.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

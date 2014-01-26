@@ -25,25 +25,41 @@
 class OperationBase
 {
 public:
-	OperationBase(tstring *basePath, UserArgs::ActionScope scope);
+	OperationBase(tstring *basePath, tstring *mailbox, UserArgs::ActionScope scope);
 	~OperationBase(void);
 	void DoOperation();
 	virtual void ProcessFolder(LPMAPIFOLDER folder, tstring folderPath);
 	std::string GetStringFromFolderPath(LPMAPIFOLDER folder);
+	HRESULT OperationBase::CopySBinary(_Out_ LPSBinary psbDest, _In_ const LPSBinary psbSrc, _In_ LPVOID lpParent);
+	bool OperationBase::IsEntryIdEqual(SBinary a, SBinary b);
+	LPMAPISESSION lpSession;
+	LPSPropTagArray rgAclTablePropTag;
+	tstring strAnonymous;
+	tstring strDefault;
 
 private:
 	LPMAPIFOLDER GetPFRoot(IMAPISession *pSession);
+	LPMAPIFOLDER GetMailboxRoot(IMAPISession *pSession);
 	LPMAPIFOLDER OperationBase::GetStartingFolder(IMAPISession *pSession, tstring *calculatedFolderPath);
 	HRESULT OperationBase::GetSubfolderByName(LPMAPIFOLDER parentFolder, tstring folderNameToFind, LPMAPIFOLDER *returnedFolder, tstring *returnedFolderName);
 	void TraverseFolders(CComPtr<IMAPISession> session, LPMAPIFOLDER baseFolder, tstring parentPath);
 	HRESULT BuildServerDN(LPCSTR szServerName, LPCSTR szPost, LPSTR* lpszServerDN);
 	std::vector<tstring> OperationBase::Split(const tstring &s, TCHAR delim);
 	std::vector<tstring> &Split(const tstring &s, TCHAR delim, std::vector<tstring> &elems);
-	LPMAPIFOLDER lpPFRoot;
+	LPMAPIFOLDER lpRootFolder;
 	LPMAPIFOLDER lpStartingFolder;
 	LPMDB lpAdminMDB;
-	LPMAPISESSION lpSession;
 	tstring *strBasePath;
+	tstring *strMailbox;
 	UserArgs::ActionScope nScope;
 };
+
+enum {
+    ePR_MEMBER_ENTRYID, 
+    ePR_MEMBER_RIGHTS,  
+    ePR_MEMBER_ID, 
+    ePR_MEMBER_NAME, 
+    NUM_COLS
+};
+
 

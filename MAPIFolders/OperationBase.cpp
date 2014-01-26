@@ -3,11 +3,26 @@
 #include "MAPIFolders.h"
 #include <algorithm>
 
-OperationBase::OperationBase(tstring *pstrBasePath, UserArgs::ActionScope nScope)
+OperationBase::OperationBase(tstring *pstrBasePath, tstring *pstrMailbox, UserArgs::ActionScope nScope)
 {
 	this->lpAdminMDB = NULL;
 	this->strBasePath = pstrBasePath;
+	this->strMailbox = pstrMailbox;
 	this->nScope = nScope;
+
+	SizedSPropTagArray(NUM_COLS, rgAclTablePropTag) =
+	{
+		NUM_COLS,
+		{
+			PR_MEMBER_ENTRYID,  // Unique across directory.
+			PR_MEMBER_RIGHTS,  
+			PR_MEMBER_ID,       // Unique within ACL table. 
+			PR_MEMBER_NAME,     // Display name.
+		}
+	};
+
+	strAnonymous = _T("Anonymous");
+	strDefault = _T("Default");
 }
 
 
@@ -48,7 +63,7 @@ void OperationBase::DoOperation()
 {
 	HRESULT hr = S_OK;
 	lpAdminMDB = NULL;
-	lpPFRoot = NULL;
+	lpRootFolder = NULL;
 	lpStartingFolder = NULL;
 	lpSession = NULL;
 	tstring startingPath(_T(""));
@@ -59,8 +74,15 @@ void OperationBase::DoOperation()
 
 	CORg(MAPILogonEx(0, NULL, NULL, MAPI_LOGON_UI | MAPI_EXTENDED | MAPI_ALLOW_OTHERS | MAPI_LOGON_UI | MAPI_EXPLICIT_PROFILE, &lpSession));
 		
-	lpPFRoot = GetPFRoot(lpSession);
-	if (lpPFRoot == NULL)
+	if (strMailbox != NULL)
+	{
+		lpRootFolder = GetMailboxRoot(lpSession);
+	}
+	else
+	{
+		lpRootFolder = GetPFRoot(lpSession);
+	}
+	if (lpRootFolder == NULL)
 		goto Error;
 
 	lpStartingFolder = GetStartingFolder(lpSession, &startingPath);
@@ -73,8 +95,8 @@ void OperationBase::DoOperation()
 	TraverseFolders(lpSession, lpStartingFolder, startingPath);
 
 Cleanup:
-	if (lpPFRoot)
-		lpPFRoot->Release();
+	if (lpRootFolder)
+		lpRootFolder->Release();
 	if (lpAdminMDB)
 		lpAdminMDB->Release();
 	if (lpSession)
@@ -82,6 +104,13 @@ Cleanup:
 	return;
 Error:
 	goto Cleanup;
+}
+
+LPMAPIFOLDER OperationBase::GetMailboxRoot(IMAPISession *pSession)
+{
+	HRESULT hr = S_OK;
+
+	return NULL;
 }
 
 LPMAPIFOLDER OperationBase::GetPFRoot(IMAPISession *pSession)
@@ -243,12 +272,12 @@ LPMAPIFOLDER OperationBase::GetStartingFolder(IMAPISession *pSession, tstring *c
 		tstring returnedFolderName = _T("");
 		if (_tstricmp(splitPath.at(1).c_str(), _T("non_ipm_subtree")) == 0)
 		{
-			CORg(GetSubfolderByName(lpPFRoot, _T("NON_IPM_SUBTREE"), &lpTopFolder, &returnedFolderName));
+			CORg(GetSubfolderByName(lpRootFolder, _T("NON_IPM_SUBTREE"), &lpTopFolder, &returnedFolderName));
 			calculatedFolderPath->append(_T("\\NON_IPM_SUBTREE"));
 		}
 		else
 		{
-			CORg(GetSubfolderByName(lpPFRoot, _T("IPM_SUBTREE"), &lpTopFolder, &returnedFolderName));
+			CORg(GetSubfolderByName(lpRootFolder, _T("IPM_SUBTREE"), &lpTopFolder, &returnedFolderName));
 			calculatedFolderPath->append(_T("\\IPM_SUBTREE"));
 		}
 	}
@@ -577,3 +606,54 @@ std::vector<tstring> &OperationBase::Split(const tstring &s, TCHAR delim, std::v
     }
     return elems;
 }
+
+bool OperationBase::IsEntryIdEqual(SBinary a, SBinary b)
+{
+	if (a.cb != b.cb)
+		return false;
+
+	return (!memcmp(a.lpb, b.lpb, a.cb));
+}
+
+// From MFCMapi MAPIFunctions.cpp
+///////////////////////////////////////////////////////////////////////////////
+//	CopySBinary()
+//
+//	Parameters
+//		psbDest - Address of the destination binary
+//		psbSrc  - Address of the source binary
+//		lpParent - Pointer to parent object (not, however, pointer to pointer!)
+//
+//	Purpose
+//		Allocates a new SBinary and copies psbSrc into it
+//
+HRESULT OperationBase::CopySBinary(_Out_ LPSBinary psbDest, _In_ const LPSBinary psbSrc, _In_ LPVOID lpParent)
+{
+	HRESULT hr = S_OK;
+
+	if (!psbDest || !psbSrc) return MAPI_E_INVALID_PARAMETER;
+
+	psbDest->cb = psbSrc->cb;
+
+	if (psbSrc->cb)
+	{
+		if (lpParent)
+		{
+			CORg(MAPIAllocateMore(
+				psbSrc->cb,
+				lpParent,
+				(LPVOID *) &psbDest->lpb));
+		}
+		else
+		{
+			CORg(MAPIAllocateBuffer(
+				psbSrc->cb,
+				(LPVOID *) &psbDest->lpb));
+		}
+		if (S_OK == hr)
+			CopyMemory(psbDest->lpb,psbSrc->lpb,psbSrc->cb);
+	}
+Error:
+
+	return hr;
+} // CopySBinary
