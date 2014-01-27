@@ -14,9 +14,6 @@ ModifyFolderPermissions::ModifyFolderPermissions(tstring *pstrBasePath, tstring 
 HRESULT ModifyFolderPermissions::Initialize(void)
 {
 	HRESULT hr = S_OK;
-	LPADRBOOK lpAdrBook = NULL;
-	LPADRLIST lpAdrList = NULL;
-	LPENTRYID lpEID = NULL;
 
 	CORg(OperationBase::Initialize());
 	
@@ -46,49 +43,12 @@ HRESULT ModifyFolderPermissions::Initialize(void)
 	}
 	else
 	{
-		enum
+		this->resolvedUserEID = this->ResolveNameToEID(this->pstrUserString);
+		if (this->resolvedUserEID == NULL)
 		{
-			NAME,
-			NUM_RECIP_PROPS
-		};
-
-		CORg(lpSession->OpenAddressBook(NULL, NULL, NULL, &lpAdrBook));
-		HrAllocAdrList(NUM_RECIP_PROPS,&lpAdrList);
-		if (lpAdrList)
-		{
-			// Setup the One Time recipient by indicating how many recipients
-			// and how many properties will be set on each recipient.
-			lpAdrList->cEntries = 1;	// How many recipients.
-			lpAdrList->aEntries[0].cValues = NUM_RECIP_PROPS; // How many properties per recipient
-
-			// Set the SPropValue members == the desired values.
-			lpAdrList->aEntries[0].rgPropVals[NAME].ulPropTag = PR_DISPLAY_NAME;
-			lpAdrList->aEntries[0].rgPropVals[NAME].Value.LPSZ = (LPTSTR) this->pstrUserString->c_str();
-
-			CORg(lpAdrBook->ResolveName(
-				0L,
-				fMapiUnicode,
-				NULL,
-				lpAdrList));
-
-			CORg(MAPIAllocateBuffer(sizeof(SBinary), (LPVOID*) &this->resolvedUserEID));
-			ZeroMemory(this->resolvedUserEID, sizeof(SBinary));
-			bool foundEID = false;
-			for (UINT x = 0; x < lpAdrList->aEntries[0].cValues; x++)
-			{
-				if (lpAdrList->aEntries[0].rgPropVals[x].ulPropTag == PR_ENTRYID)
-				{
-					CORg(this->CopySBinary(this->resolvedUserEID, &lpAdrList->aEntries[0].rgPropVals[x].Value.bin, NULL));
-					foundEID = true;
-					break;
-				}
-			}
-
-			if (!foundEID)
-			{
-				hr = MAPI_E_NOT_FOUND;
-				goto Error;
-			}
+			hr = MAPI_E_NOT_FOUND;
+			tcout << _T("Could not resolve the specified user name.") << std::endl;
+			goto Error;
 		}
 	}
 
@@ -118,12 +78,6 @@ HRESULT ModifyFolderPermissions::Initialize(void)
 	}
 
 Cleanup:
-	if (lpAdrList)
-		FreePadrlist(lpAdrList);
-	if (lpAdrBook)
-		lpAdrBook->Release();
-	if (lpAdrBook)
-		lpAdrBook->Release();
 	return hr;
 Error:
 	goto Cleanup;
@@ -228,50 +182,19 @@ void ModifyFolderPermissions::ProcessFolder(LPMAPIFOLDER folder, tstring folderP
 	}
 
 Cleanup:
+	if (pRows)
+		FreeProws(pRows);
+	if (lpMapiTable)
+		lpMapiTable->Release();
+	if (lpExchModTbl)
+		lpExchModTbl->Release();
+
 	return;
 Error:
 	goto Cleanup;
 }
 
-// From MAPIABFunctions.cpp in MFCMapi
-HRESULT ModifyFolderPermissions::HrAllocAdrList(ULONG ulNumProps, _Deref_out_opt_ LPADRLIST* lpAdrList)
-{
-	if (!lpAdrList || ulNumProps > ULONG_MAX/sizeof(SPropValue)) return MAPI_E_INVALID_PARAMETER;
-	HRESULT hr = S_OK;
-	LPADRLIST lpLocalAdrList = NULL;
 
-	*lpAdrList = NULL;
-
-	// Allocate memory for new SRowSet structure.
-	CORg(MAPIAllocateBuffer(CbNewSRowSet(1),(LPVOID*) &lpLocalAdrList));
-
-	if (lpLocalAdrList)
-	{
-		// Zero out allocated memory.
-		ZeroMemory(lpLocalAdrList, CbNewSRowSet(1));
-
-		// Allocate memory for SPropValue structure that indicates what
-		// recipient properties will be set.
-		CORg(MAPIAllocateBuffer(
-			ulNumProps * sizeof(SPropValue),
-			(LPVOID*) &lpLocalAdrList->aEntries[0].rgPropVals));
-
-		// Zero out allocated memory.
-		if (lpLocalAdrList->aEntries[0].rgPropVals)
-			ZeroMemory(lpLocalAdrList->aEntries[0].rgPropVals,ulNumProps * sizeof(SPropValue));
-		if (SUCCEEDED(hr))
-		{
-			*lpAdrList = lpLocalAdrList;
-		}
-		else
-		{
-			FreePadrlist(lpLocalAdrList);
-		}
-	}
-
-Error:
-	return hr;
-} // HrAllocAdrList
 
 ModifyFolderPermissions::~ModifyFolderPermissions(void)
 {

@@ -36,7 +36,6 @@ public:
 	~ModifyFolderPermissions(void);
 
 private:
-	HRESULT ModifyFolderPermissions::HrAllocAdrList(ULONG ulNumProps, _Deref_out_opt_ LPADRLIST* lpAdrList);
 	bool remove;
 	tstring *pstrUserString;
 	tstring *pstrRightsString;

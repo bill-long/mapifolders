@@ -68,12 +68,17 @@ HRESULT OperationBase::Initialize(void)
 		lpRootFolder = GetPFRoot(lpSession);
 	}
 	if (lpRootFolder == NULL)
+	{
+		tcout << "Failed to get root folder" << std::endl;
+		hr = MAPI_E_NOT_FOUND;
 		goto Error;
+	}
 
 	lpStartingFolder = GetStartingFolder(lpSession, &startingPath);
 	if (lpStartingFolder == NULL)
 	{
 		tcout << "Failed to find the specified folder" << std::endl;
+		hr = MAPI_E_NOT_FOUND;
 		goto Error;
 	}
 
@@ -100,8 +105,27 @@ void OperationBase::DoOperation()
 LPMAPIFOLDER OperationBase::GetMailboxRoot(IMAPISession *pSession)
 {
 	HRESULT hr = S_OK;
+	LPSBinary mailboxEID = NULL;
+	LPMAPIFOLDER lpRoot = NULL;
 
-	return NULL;
+	// Resolve the mailbox name to an EID
+	mailboxEID = this->ResolveNameToEID(this->strMailbox);
+	if (mailboxEID->cb == 0)
+	{
+		tcout << _T("Could not resolve mailbox name.") << std::endl;
+		hr = MAPI_E_NOT_FOUND;
+		goto Error;
+	}
+
+	CORg(pSession->OpenMsgStore(NULL, mailboxEID->cb, (LPENTRYID)mailboxEID->lpb, NULL,
+		MAPI_BEST_ACCESS | MDB_ONLINE, &lpAdminMDB));
+	ULONG ulObjType = NULL;
+	CORg(lpAdminMDB->OpenEntry(NULL, NULL, NULL, MAPI_BEST_ACCESS, &ulObjType, (LPUNKNOWN *) &lpRoot));
+
+Cleanup:
+	return lpRoot;
+Error:
+	goto Cleanup;
 }
 
 LPMAPIFOLDER OperationBase::GetPFRoot(IMAPISession *pSession)
@@ -648,3 +672,105 @@ Error:
 
 	return hr;
 } // CopySBinary
+
+LPSBinary OperationBase::ResolveNameToEID(tstring *pstrName)
+{
+	HRESULT hr = S_OK;
+	LPADRBOOK lpAdrBook = NULL;
+	LPADRLIST lpAdrList = NULL;
+	LPSBinary lpEID = NULL;
+
+	enum
+	{
+		NAME,
+		NUM_RECIP_PROPS
+	};
+
+	CORg(lpSession->OpenAddressBook(NULL, NULL, NULL, &lpAdrBook));
+	HrAllocAdrList(NUM_RECIP_PROPS,&lpAdrList);
+	if (lpAdrList)
+	{
+		// Setup the One Time recipient by indicating how many recipients
+		// and how many properties will be set on each recipient.
+		lpAdrList->cEntries = 1;	// How many recipients.
+		lpAdrList->aEntries[0].cValues = NUM_RECIP_PROPS; // How many properties per recipient
+
+		// Set the SPropValue members == the desired values.
+		lpAdrList->aEntries[0].rgPropVals[NAME].ulPropTag = PR_DISPLAY_NAME;
+		lpAdrList->aEntries[0].rgPropVals[NAME].Value.LPSZ = (LPTSTR) pstrName->c_str();
+
+		CORg(lpAdrBook->ResolveName(
+			0L,
+			fMapiUnicode,
+			NULL,
+			lpAdrList));
+
+		CORg(MAPIAllocateBuffer(sizeof(SBinary), (LPVOID*) &lpEID));
+		ZeroMemory(lpEID, sizeof(SBinary));
+		bool foundEID = false;
+		for (UINT x = 0; x < lpAdrList->aEntries[0].cValues; x++)
+		{
+			if (lpAdrList->aEntries[0].rgPropVals[x].ulPropTag == PR_ENTRYID)
+			{
+				CORg(this->CopySBinary(lpEID, &lpAdrList->aEntries[0].rgPropVals[x].Value.bin, NULL));
+				foundEID = true;
+				break;
+			}
+		}
+
+		if (!foundEID)
+		{
+			hr = MAPI_E_NOT_FOUND;
+			goto Error;
+		}
+	}
+
+Cleanup:
+	if (lpAdrList)
+		FreePadrlist(lpAdrList);
+	if (lpAdrBook)
+		lpAdrBook->Release();
+	return lpEID;
+Error:
+	goto Cleanup;
+}
+
+// From MAPIABFunctions.cpp in MFCMapi
+HRESULT OperationBase::HrAllocAdrList(ULONG ulNumProps, _Deref_out_opt_ LPADRLIST* lpAdrList)
+{
+	if (!lpAdrList || ulNumProps > ULONG_MAX/sizeof(SPropValue)) return MAPI_E_INVALID_PARAMETER;
+	HRESULT hr = S_OK;
+	LPADRLIST lpLocalAdrList = NULL;
+
+	*lpAdrList = NULL;
+
+	// Allocate memory for new SRowSet structure.
+	CORg(MAPIAllocateBuffer(CbNewSRowSet(1),(LPVOID*) &lpLocalAdrList));
+
+	if (lpLocalAdrList)
+	{
+		// Zero out allocated memory.
+		ZeroMemory(lpLocalAdrList, CbNewSRowSet(1));
+
+		// Allocate memory for SPropValue structure that indicates what
+		// recipient properties will be set.
+		CORg(MAPIAllocateBuffer(
+			ulNumProps * sizeof(SPropValue),
+			(LPVOID*) &lpLocalAdrList->aEntries[0].rgPropVals));
+
+		// Zero out allocated memory.
+		if (lpLocalAdrList->aEntries[0].rgPropVals)
+			ZeroMemory(lpLocalAdrList->aEntries[0].rgPropVals,ulNumProps * sizeof(SPropValue));
+		if (SUCCEEDED(hr))
+		{
+			*lpAdrList = lpLocalAdrList;
+		}
+		else
+		{
+			FreePadrlist(lpLocalAdrList);
+		}
+	}
+
+Error:
+	return hr;
+} // HrAllocAdrList
