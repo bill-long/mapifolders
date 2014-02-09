@@ -907,7 +907,7 @@ Error:
 
 void OperationBase::OutputSBinary(SBinary lpsbin)
 {
-	for (int x = 0; x < lpsbin.cb; x++)
+	for (UINT x = 0; x < lpsbin.cb; x++)
 	{
 		tcout << std::hex << static_cast<int>(lpsbin.lpb[x]);
 	}
@@ -1064,7 +1064,6 @@ HRESULT OperationBase::UnicodeToAnsi(_In_z_ LPCWSTR pszW, _Out_z_cap_(cchszW) LP
 			delete[] pszA;
 		}
 	}
-Error:
 	return hr;
 } // UnicodeToAnsi
 
@@ -1109,8 +1108,6 @@ HRESULT OperationBase::AnsiToUnicode(_In_opt_z_ LPCSTR pszA, _Out_z_cap_(cchszA)
 			delete[] pszW;
 		}
 	}
-Error:
-
 	return hr;
 } // AnsiToUnicode
 
