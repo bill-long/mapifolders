@@ -2,6 +2,8 @@
 //
 
 #include "stdafx.h"
+#include "fcntl.h"
+#include "io.h"
 #include "MAPIFolders.h"
 
 #pragma warning( disable : 4127)
@@ -9,6 +11,11 @@
 int _tmain(int argc, _TCHAR* argv[])
 {
 	HRESULT hr = S_OK;
+
+#if defined(UNICODE) || defined(_UNICODE)
+	_setmode(_fileno(stdout), _O_U16TEXT);
+#endif
+
 	UserArgs ua;
 	if (ua.Parse(argc, argv))
 	{

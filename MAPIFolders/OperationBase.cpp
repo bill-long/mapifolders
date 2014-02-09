@@ -105,24 +105,133 @@ void OperationBase::DoOperation()
 LPMAPIFOLDER OperationBase::GetMailboxRoot(IMAPISession *pSession)
 {
 	HRESULT hr = S_OK;
-	LPSBinary mailboxEID = NULL;
+	SBinary mailboxEID = {0};
 	LPMAPIFOLDER lpRoot = NULL;
+	LPADRBOOK lpAdrBook = NULL;
+	LPADRLIST lpAdrList = NULL;
+	LPMDB lpDefaultMDB = NULL;
+	LPEXCHANGEMANAGESTORE lpXManageStore = NULL;
+	LPTSTR szServerName = NULL;
+	LPCTSTR	szServerNamePTR = NULL;
+	LPTSTR lpszMsgStoreDN = NULL;
 
-	// Resolve the mailbox name to an EID
-	mailboxEID = this->ResolveNameToEID(this->strMailbox);
-	if (mailboxEID->cb == 0)
+	tcout << "Resolving mailbox: " << this->strMailbox->c_str() << std::endl;
+
+	enum
 	{
-		tcout << _T("Could not resolve mailbox name.") << std::endl;
+		NAME,
+		NUM_RECIP_PROPS
+	};
+
+	CORg(lpSession->OpenAddressBook(NULL, NULL, NULL, &lpAdrBook));
+	HrAllocAdrList(NUM_RECIP_PROPS,&lpAdrList);
+	if (lpAdrList)
+	{
+		lpAdrList->cEntries = 1;	// How many recipients.
+		lpAdrList->aEntries[0].cValues = NUM_RECIP_PROPS; // How many properties per recipient
+
+		// Set the SPropValue members == the desired values.
+		lpAdrList->aEntries[0].rgPropVals[NAME].ulPropTag = PR_DISPLAY_NAME;
+		lpAdrList->aEntries[0].rgPropVals[NAME].Value.LPSZ = (LPTSTR) this->strMailbox->c_str();
+
+		CORg(lpAdrBook->ResolveName(
+			0L,
+			fMapiUnicode,
+			NULL,
+			lpAdrList));
+
+		bool foundEXAddressType = false;
+		LPTSTR emailAddress = NULL;
+		for (UINT x = 0; x < lpAdrList->aEntries[0].cValues; x++)
+		{
+			SPropValue thisProp = lpAdrList->aEntries[0].rgPropVals[x];
+			if (thisProp.ulPropTag == PR_ADDRTYPE)
+			{
+				tcout << "    PR_ADDRTYPE: " << thisProp.Value.LPSZ << std::endl;
+				if (tstring(_T("EX")).compare(thisProp.Value.LPSZ) == 0)
+				{
+					foundEXAddressType = true;
+				}
+			}
+			else if (thisProp.ulPropTag == PR_DISPLAY_NAME)
+			{
+				tcout << "    PR_DISPLAY_NAME: " << thisProp.Value.LPSZ << std::endl;
+			}
+			else if (thisProp.ulPropTag == PR_EMAIL_ADDRESS)
+			{
+				tcout << "    PR_EMAIL_ADDRESS: " << thisProp.Value.LPSZ << std::endl;
+				emailAddress = thisProp.Value.LPSZ;
+			}
+		}
+
+		if (!foundEXAddressType || emailAddress == NULL)
+		{
+			hr = MAPI_E_NOT_FOUND;
+			goto Error;
+		}
+
+		CORg(OpenDefaultMessageStore(lpSession, &lpDefaultMDB));
+
+		CORg(lpDefaultMDB->QueryInterface(
+		IID_IExchangeManageStore,
+		(LPVOID*) &lpXManageStore));
+
+		CORg(GetServerName(lpSession, &szServerName));
+		szServerNamePTR = szServerName;
+
+		CORg(BuildServerDN(
+			szServerNamePTR,
+			_T("/cn=Microsoft Private MDB"), // STRING_OK
+			&lpszMsgStoreDN));
+
+#ifdef UNICODE
+		{
+			char *szAnsiMsgStoreDN = NULL;
+			char *szAnsiMailboxDN = NULL;
+			CORg(UnicodeToAnsi(lpszMsgStoreDN,&szAnsiMsgStoreDN,-1));
+			CORg(UnicodeToAnsi(emailAddress,&szAnsiMailboxDN,-1));
+
+			CORg(lpXManageStore->CreateStoreEntryID(
+				szAnsiMsgStoreDN,
+				szAnsiMailboxDN,
+				OPENSTORE_TAKE_OWNERSHIP | OPENSTORE_USE_ADMIN_PRIVILEGE,
+				&mailboxEID.cb,
+				(LPENTRYID*) &mailboxEID.lpb));
+			delete[] szAnsiMsgStoreDN;
+			delete[] szAnsiMailboxDN;
+		}
+#else
+		EC_MAPI(lpXManageStore->CreateStoreEntryID(
+			(LPSTR) lpszMsgStoreDN,
+			(LPSTR) lpszMailboxDN,
+			ulFlags,
+			&mailboxEID->cb,
+			(LPENTRYID*) &mailboxEID->lpb));
+#endif
+	}
+
+	if (mailboxEID.cb == 0)
+	{
+		tcout << _T("Could not resolve mailbox.") << std::endl;
 		hr = MAPI_E_NOT_FOUND;
 		goto Error;
 	}
 
-	CORg(pSession->OpenMsgStore(NULL, mailboxEID->cb, (LPENTRYID)mailboxEID->lpb, NULL,
-		MAPI_BEST_ACCESS | MDB_ONLINE, &lpAdminMDB));
+	CORg(CallOpenMsgStore(lpSession, NULL, &mailboxEID,
+		MDB_NO_DIALOG |
+		MDB_NO_MAIL |     // spooler not notified of our presence
+		MDB_TEMPORARY |   // message store not added to MAPI profile
+		MAPI_BEST_ACCESS, // normally WRITE, but allow access to RO store
+		&lpAdminMDB));
+
 	ULONG ulObjType = NULL;
 	CORg(lpAdminMDB->OpenEntry(NULL, NULL, NULL, MAPI_BEST_ACCESS, &ulObjType, (LPUNKNOWN *) &lpRoot));
 
 Cleanup:
+	if (lpAdrList)
+		FreePadrlist(lpAdrList);
+	if (lpAdrBook)
+		lpAdrBook->Release();
 	return lpRoot;
 Error:
 	goto Cleanup;
@@ -140,13 +249,12 @@ LPMAPIFOLDER OperationBase::GetPFRoot(IMAPISession *pSession)
 	LPMDB lpMDB = NULL;
 	LPEXCHANGEMANAGESTORE lpXManageStore = NULL;
 	LPSPropValue lpServerName = NULL;
-	LPSTR	szServerDN = NULL;
+	LPTSTR	szServerDN = NULL;
 
 	enum MAPIColumns
 	{
 		COL_ENTRYID = 0,
-		COL_DISPLAYNAME_W,
-		COL_DISPLAYNAME_A,
+		COL_DISPLAYNAME,
 		COL_MDB_PROVIDER,
 		cCols				// End marker
 	};
@@ -156,8 +264,7 @@ LPMAPIFOLDER OperationBase::GetPFRoot(IMAPISession *pSession)
 		cCols,
 		{
 			PR_ENTRYID,
-			PR_DISPLAY_NAME_W,
-			PR_DISPLAY_NAME_A,
+			PR_DISPLAY_NAME,
 			PR_MDB_PROVIDER
 		}
 	};
@@ -173,16 +280,11 @@ LPMAPIFOLDER OperationBase::GetPFRoot(IMAPISession *pSession)
 	for (UINT i=0; i != pmrows->cRows; i++)
 	{
 		SRow *prow = pmrows->aRow + i;
-		LPCWSTR pwz = NULL;
-		LPCSTR pwzA = NULL;
-		if (PR_DISPLAY_NAME_W == prow->lpProps[COL_DISPLAYNAME_W].ulPropTag)
-			pwz = prow->lpProps[COL_DISPLAYNAME_W].Value.lpszW;
-		if (PR_DISPLAY_NAME_A == prow->lpProps[COL_DISPLAYNAME_A].ulPropTag)
-			pwzA = prow->lpProps[COL_DISPLAYNAME_A].Value.lpszA;
+		LPCTSTR pwz = NULL;
+		if (PR_DISPLAY_NAME == prow->lpProps[COL_DISPLAYNAME].ulPropTag)
+			pwz = prow->lpProps[COL_DISPLAYNAME].Value.LPSZ;
 		if (pwz)
-			std::wcout << L" " << std::setw(4) << i << L": " << (pwz ? pwz : L"<NULL>") << std::endl;
-		else
-			tcout << " " << std::setw(4) << i << ": " << (pwzA ? pwzA : "<NULL>") << std::endl;
+			tcout << " " << std::setw(4) << i << ": " << (pwz ? pwz : _T("<NULL>")) << std::endl;
 
 		if (IsEqualMAPIUID(prow->lpProps[COL_MDB_PROVIDER].Value.bin.lpb,pbExchangeProviderPublicGuid))
 		{
@@ -212,22 +314,39 @@ LPMAPIFOLDER OperationBase::GetPFRoot(IMAPISession *pSession)
 			PR_HIERARCHY_SERVER,
 			&lpServerName));
 
-	tcout << "Using public folder server/mailbox: " << lpServerName->Value.lpszW << std::endl;
-
+	tcout << "Using public folder server/mailbox: " << lpServerName->Value.LPSZ << std::endl;
+	LPTSTR szServerName = lpServerName->Value.LPSZ;
+	LPCTSTR szServerNamePTR = szServerName;
 	CORg(BuildServerDN(
-				(LPCSTR)lpServerName->Value.lpszA,
-				("/cn=Microsoft Public MDB"),
+		szServerNamePTR,
+				_T("/cn=Microsoft Public MDB"),
 				&szServerDN));
 
 	CORg(lpMDB->QueryInterface(
 		IID_IExchangeManageStore,
 		(LPVOID*) &lpXManageStore));
 
-	LPSTR lpszMailboxDN = NULL;
-	ULONG flags = OPENSTORE_USE_ADMIN_PRIVILEGE | OPENSTORE_PUBLIC;
-	CORg(lpXManageStore->CreateStoreEntryID((LPSTR)szServerDN, lpszMailboxDN,
-		flags,
-		&adminEntryID.cb, (LPENTRYID *)&adminEntryID.lpb));
+#ifdef UNICODE
+		{
+			char *szAnsiMsgStoreDN = NULL;
+			CORg(UnicodeToAnsi(szServerDN,&szAnsiMsgStoreDN,-1));
+
+			CORg(lpXManageStore->CreateStoreEntryID(
+				szAnsiMsgStoreDN,
+				NULL,
+				OPENSTORE_PUBLIC | OPENSTORE_USE_ADMIN_PRIVILEGE,
+				&adminEntryID.cb,
+				(LPENTRYID*) &adminEntryID.lpb));
+			delete[] szAnsiMsgStoreDN;
+		}
+#else
+		EC_MAPI(lpXManageStore->CreateStoreEntryID(
+			(LPSTR) lpszMsgStoreDN,
+			(LPSTR) lpszMailboxDN,
+			ulFlags,
+			&mailboxEID->cb,
+			(LPENTRYID*) &mailboxEID->lpb));
+#endif
 
 	CORg(pSession->OpenMsgStore(NULL, adminEntryID.cb, (LPENTRYID)adminEntryID.lpb, NULL,
 		MAPI_BEST_ACCESS | MDB_ONLINE, &lpAdminMDB));
@@ -254,69 +373,83 @@ LPMAPIFOLDER OperationBase::GetStartingFolder(IMAPISession *pSession, tstring *c
 	LPMAPIFOLDER lpTopFolder = NULL; // will be IPM_SUBTREE or NON_IPM_SUBTREE, do NOT release
 	LPMAPIFOLDER lpFolderToReturn = NULL;
 	ULONG ulObjType = NULL;
+	std::vector<tstring> splitPath;
+	UINT startIndex = 1;
 
-	if (this->strBasePath == NULL)
+	if (this->strMailbox != NULL)
 	{
-		// If user didn't specify a path, assume IPM_SUBTREE
-		userSpecifiedPath = (_T("\\IPM_SUBTREE"));
+		lpTopFolder = lpRootFolder;
+		if (this->strBasePath == NULL)
+			userSpecifiedPath = _T("");
+		else
+			userSpecifiedPath = *this->strBasePath;
+
+		splitPath = Split(userSpecifiedPath, (_T('\\')));
 	}
 	else
 	{
-		userSpecifiedPath = *this->strBasePath;
-	}
-
-	// Split the specified pathing using backslash separator
-	std::vector<tstring> splitPath = Split(userSpecifiedPath, (_T('\\')));
-
-	// We must have at least two items
-	if (splitPath.size() < 2)
-	{
-		goto Error;
-	}
-
-	// The first item must be empty, which indicates we had a leading backslash
-	if (splitPath.at(0).length() != 0)
-	{
-		goto Error;
-	}
-
-	// The second item could be IPM_SUBTREE, NON_IPM_SUBTREE, or a folder name
-	// If a folder name, assume IPM_SUBTREE
-	if (splitPath.at(1).length() > 0)
-	{
-		tstring returnedFolderName = _T("");
-		if (_tstricmp(splitPath.at(1).c_str(), _T("non_ipm_subtree")) == 0)
+		if (this->strBasePath == NULL)
 		{
-			CORg(GetSubfolderByName(lpRootFolder, _T("NON_IPM_SUBTREE"), &lpTopFolder, &returnedFolderName));
-			calculatedFolderPath->append(_T("\\NON_IPM_SUBTREE"));
+			// If user didn't specify a path, assume IPM_SUBTREE
+			userSpecifiedPath = (_T("\\IPM_SUBTREE"));
 		}
 		else
 		{
-			CORg(GetSubfolderByName(lpRootFolder, _T("IPM_SUBTREE"), &lpTopFolder, &returnedFolderName));
-			calculatedFolderPath->append(_T("\\IPM_SUBTREE"));
+			userSpecifiedPath = *this->strBasePath;
 		}
-	}
 
-	// At this point we should know where we're starting to look for the
-	// specified folder.
-	if (lpTopFolder == NULL)
-	{
-		goto Error;
-	}
+		// Split the specified path using backslash separator
+		splitPath = Split(userSpecifiedPath, (_T('\\')));
 
-	// If the first item is a root folder, then skip it, because
-	// we already got that far.
-	UINT startIndex = 1;
-	if ((_tstricmp(splitPath.at(1).c_str(), _T("non_ipm_subtree")) == 0) ||
-		(_tstricmp(splitPath.at(1).c_str(), _T("ipm_subtree")) == 0))
-	{
-		startIndex = 2;
+		// We must have at least two items
+		if (splitPath.size() < 2)
+		{
+			goto Error;
+		}
+
+		// The first item must be empty, which indicates we had a leading backslash
+		if (splitPath.at(0).length() != 0)
+		{
+			goto Error;
+		}
+
+		// The second item could be IPM_SUBTREE, NON_IPM_SUBTREE, or a folder name
+		// If a folder name, assume IPM_SUBTREE
+		if (splitPath.at(1).length() > 0)
+		{
+			tstring returnedFolderName = _T("");
+			if (_tstricmp(splitPath.at(1).c_str(), _T("non_ipm_subtree")) == 0)
+			{
+				CORg(GetSubfolderByName(lpRootFolder, _T("NON_IPM_SUBTREE"), &lpTopFolder, &returnedFolderName));
+				calculatedFolderPath->append(_T("\\NON_IPM_SUBTREE"));
+			}
+			else
+			{
+				CORg(GetSubfolderByName(lpRootFolder, _T("IPM_SUBTREE"), &lpTopFolder, &returnedFolderName));
+				calculatedFolderPath->append(_T("\\IPM_SUBTREE"));
+			}
+		}
+
+		// At this point we should know where we're starting to look for the
+		// specified folder.
+		if (lpTopFolder == NULL)
+		{
+			goto Error;
+		}
+
+		// If the first item is a root folder, then skip it, because
+		// we already got that far.
+		if ((_tstricmp(splitPath.at(1).c_str(), _T("non_ipm_subtree")) == 0) ||
+			(_tstricmp(splitPath.at(1).c_str(), _T("ipm_subtree")) == 0))
+		{
+			startIndex = 2;
+		}
 	}
 
 	// If startIndex points to the 3rd item, but we only have 2 because
 	// a root folder was specified as the starting folder, then we're
-	// already done
-	if (startIndex == 2 && splitPath.size() == 2)
+	// already done. Or if this is a mailbox and no path was specified, we're done.
+	if (startIndex >= splitPath.size())
 	{
 		lpFolderToReturn = lpTopFolder;
 	}
@@ -436,7 +569,7 @@ void OperationBase::TraverseFolders(CComPtr<IMAPISession> session, LPMAPIFOLDER 
 		enum MAPIColumns
 		{
 			COL_ENTRYID = 0,
-			COL_DISPLAYNAME_W,
+			COL_DISPLAYNAME,
 			cCols				// End marker
 		};
 
@@ -445,7 +578,7 @@ void OperationBase::TraverseFolders(CComPtr<IMAPISession> session, LPMAPIFOLDER 
 			cCols,
 			{
 				PR_ENTRYID,
-				PR_DISPLAY_NAME_W
+				PR_DISPLAY_NAME
 			}
 		};
 
@@ -504,8 +637,8 @@ RetryQueryRows:
 		{
 			SRow *prow = pmrows->aRow + i;
 			LPCWSTR pwz = NULL;
-			if (PR_DISPLAY_NAME_W == prow->lpProps[COL_DISPLAYNAME_W].ulPropTag)
-				pwz = prow->lpProps[COL_DISPLAYNAME_W].Value.lpszW;
+			if (PR_DISPLAY_NAME == prow->lpProps[COL_DISPLAYNAME].ulPropTag)
+				pwz = prow->lpProps[COL_DISPLAYNAME].Value.LPSZ;
 
 			tstring thisPath(parentPath.c_str());
 			thisPath.append(_T("\\"));
@@ -533,21 +666,20 @@ RetryOpenEntry:
 				else
 				{
 					tcout << "     OpenEntry returned an error. hr = " << std::hex << hr << std::endl;
-					goto Error;
 				}
 			}
 
 			if (lpSubfolder)
 			{
 				this->ProcessFolder(lpSubfolder, thisPath);
-			}
 
-			if (this->nScope == UserArgs::ActionScope::SUBTREE)
-			{
-				TraverseFolders(session, lpSubfolder, thisPath);
-			}
+				if (this->nScope == UserArgs::ActionScope::SUBTREE)
+				{
+					TraverseFolders(session, lpSubfolder, thisPath);
+				}
 
-			lpSubfolder->Release();
+				lpSubfolder->Release();
+			}
 		}
 	}
 	else
@@ -565,43 +697,103 @@ Error:
 	return;
 }
 
-// Borrowed from MfcMapi mostly
-// CreateStoreEntryID doesn't seem to support Unicode, so changed
-// this to be hard-coded to ASCII.
+LPSBinary OperationBase::ResolveNameToEID(tstring *pstrName)
+{
+	HRESULT hr = S_OK;
+	LPADRBOOK lpAdrBook = NULL;
+	LPADRLIST lpAdrList = NULL;
+	LPSBinary lpEID = NULL;
+
+	enum
+	{
+		NAME,
+		NUM_RECIP_PROPS
+	};
+
+	CORg(lpSession->OpenAddressBook(NULL, NULL, NULL, &lpAdrBook));
+	HrAllocAdrList(NUM_RECIP_PROPS,&lpAdrList);
+	if (lpAdrList)
+	{
+		// Setup the One Time recipient by indicating how many recipients
+		// and how many properties will be set on each recipient.
+		lpAdrList->cEntries = 1;	// How many recipients.
+		lpAdrList->aEntries[0].cValues = NUM_RECIP_PROPS; // How many properties per recipient
+
+		// Set the SPropValue members == the desired values.
+		lpAdrList->aEntries[0].rgPropVals[NAME].ulPropTag = PR_DISPLAY_NAME;
+		lpAdrList->aEntries[0].rgPropVals[NAME].Value.LPSZ = (LPTSTR) pstrName->c_str();
+
+		CORg(lpAdrBook->ResolveName(
+			0L,
+			fMapiUnicode,
+			NULL,
+			lpAdrList));
+
+		CORg(MAPIAllocateBuffer(sizeof(SBinary), (LPVOID*) &lpEID));
+		ZeroMemory(lpEID, sizeof(SBinary));
+		bool foundEID = false;
+		for (UINT x = 0; x < lpAdrList->aEntries[0].cValues; x++)
+		{
+			if (lpAdrList->aEntries[0].rgPropVals[x].ulPropTag == PR_ENTRYID)
+			{
+				CORg(this->CopySBinary(lpEID, &lpAdrList->aEntries[0].rgPropVals[x].Value.bin, NULL));
+				foundEID = true;
+				break;
+			}
+		}
+
+		if (!foundEID)
+		{
+			hr = MAPI_E_NOT_FOUND;
+			goto Error;
+		}
+	}
+
+Cleanup:
+	if (lpAdrList)
+		FreePadrlist(lpAdrList);
+	if (lpAdrBook)
+		lpAdrBook->Release();
+	return lpEID;
+Error:
+	goto Cleanup;
+}
+
+// Borrowed from MfcMapi
 // Build a server DN. Allocates memory. Free with MAPIFreeBuffer.
-_Check_return_ HRESULT OperationBase::BuildServerDN(
-					  _In_z_ LPCSTR szServerName,
-					  _In_z_ LPCSTR szPost,
-					  _Deref_out_z_ LPSTR* lpszServerDN)
+HRESULT OperationBase::BuildServerDN(
+					  _In_z_ LPCTSTR szServerName,
+					  _In_z_ LPCTSTR szPost,
+					  _Deref_out_z_ LPTSTR* lpszServerDN)
 {
 	HRESULT hr = S_OK;
 	if (!lpszServerDN) return MAPI_E_INVALID_PARAMETER;
 
-	static LPCSTR szPre = ("/cn=Configuration/cn=Servers/cn=");
+	static LPCTSTR szPre = _T("/cn=Configuration/cn=Servers/cn="); // STRING_OK
 	size_t cbPreLen = 0;
 	size_t cbServerLen = 0;
 	size_t cbPostLen = 0;
 	size_t cbServerDN = 0;
 
-	CORg(StringCbLengthA(szPre,STRSAFE_MAX_CCH * sizeof(CHAR),&cbPreLen));
-	CORg(StringCbLengthA(szServerName,STRSAFE_MAX_CCH * sizeof(CHAR),&cbServerLen));
-	CORg(StringCbLengthA(szPost,STRSAFE_MAX_CCH * sizeof(CHAR),&cbPostLen));
+	CORg(StringCbLength(szPre,STRSAFE_MAX_CCH * sizeof(TCHAR),&cbPreLen));
+	CORg(StringCbLength(szServerName,STRSAFE_MAX_CCH * sizeof(TCHAR),&cbServerLen));
+	CORg(StringCbLength(szPost,STRSAFE_MAX_CCH * sizeof(TCHAR),&cbPostLen));
 
-	cbServerDN = cbPreLen + cbServerLen + cbPostLen + sizeof(CHAR);
+	cbServerDN = cbPreLen + cbServerLen + cbPostLen + sizeof(TCHAR);
 
 	CORg(MAPIAllocateBuffer(
 		(ULONG) cbServerDN,
 		(LPVOID*)lpszServerDN));
 
-	CORg(StringCbPrintfA(
+	CORg(StringCbPrintf(
 		*lpszServerDN,
 		cbServerDN,
-		("%s%s%s"),
+		_T("%s%s%s"), // STRING_OK
 		szPre,
 		szServerName,
 		szPost));
-
 Error:
+
 	return hr;
 } // BuildServerDN
 
@@ -673,68 +865,6 @@ Error:
 	return hr;
 } // CopySBinary
 
-LPSBinary OperationBase::ResolveNameToEID(tstring *pstrName)
-{
-	HRESULT hr = S_OK;
-	LPADRBOOK lpAdrBook = NULL;
-	LPADRLIST lpAdrList = NULL;
-	LPSBinary lpEID = NULL;
-
-	enum
-	{
-		NAME,
-		NUM_RECIP_PROPS
-	};
-
-	CORg(lpSession->OpenAddressBook(NULL, NULL, NULL, &lpAdrBook));
-	HrAllocAdrList(NUM_RECIP_PROPS,&lpAdrList);
-	if (lpAdrList)
-	{
-		// Setup the One Time recipient by indicating how many recipients
-		// and how many properties will be set on each recipient.
-		lpAdrList->cEntries = 1;	// How many recipients.
-		lpAdrList->aEntries[0].cValues = NUM_RECIP_PROPS; // How many properties per recipient
-
-		// Set the SPropValue members == the desired values.
-		lpAdrList->aEntries[0].rgPropVals[NAME].ulPropTag = PR_DISPLAY_NAME;
-		lpAdrList->aEntries[0].rgPropVals[NAME].Value.LPSZ = (LPTSTR) pstrName->c_str();
-
-		CORg(lpAdrBook->ResolveName(
-			0L,
-			fMapiUnicode,
-			NULL,
-			lpAdrList));
-
-		CORg(MAPIAllocateBuffer(sizeof(SBinary), (LPVOID*) &lpEID));
-		ZeroMemory(lpEID, sizeof(SBinary));
-		bool foundEID = false;
-		for (UINT x = 0; x < lpAdrList->aEntries[0].cValues; x++)
-		{
-			if (lpAdrList->aEntries[0].rgPropVals[x].ulPropTag == PR_ENTRYID)
-			{
-				CORg(this->CopySBinary(lpEID, &lpAdrList->aEntries[0].rgPropVals[x].Value.bin, NULL));
-				foundEID = true;
-				break;
-			}
-		}
-
-		if (!foundEID)
-		{
-			hr = MAPI_E_NOT_FOUND;
-			goto Error;
-		}
-	}
-
-Cleanup:
-	if (lpAdrList)
-		FreePadrlist(lpAdrList);
-	if (lpAdrBook)
-		lpAdrBook->Release();
-	return lpEID;
-Error:
-	goto Cleanup;
-}
-
 // From MAPIABFunctions.cpp in MFCMapi
 HRESULT OperationBase::HrAllocAdrList(ULONG ulNumProps, _Deref_out_opt_ LPADRLIST* lpAdrList)
 {
@@ -774,3 +904,331 @@ HRESULT OperationBase::HrAllocAdrList(ULONG ulNumProps, _Deref_out_opt_ LPADRLIS
 Error:
 	return hr;
 } // HrAllocAdrList
+
+void OperationBase::OutputSBinary(SBinary lpsbin)
+{
+	for (int x = 0; x < lpsbin.cb; x++)
+	{
+		tcout << std::hex << static_cast<int>(lpsbin.lpb[x]);
+	}
+}
+
+// From MapiStoreFunctions.ccp in MFCMapi
+HRESULT OperationBase::OpenDefaultMessageStore(
+								_In_ LPMAPISESSION lpMAPISession,
+								_Deref_out_ LPMDB* lppDefaultMDB)
+{
+	HRESULT				hr = S_OK;
+	LPMAPITABLE			pStoresTbl = NULL;
+	LPSRowSet			pRow = NULL;
+	static SRestriction	sres;
+	SPropValue			spv;
+
+	enum
+	{
+		EID,
+		NUM_COLS
+	};
+	static const SizedSPropTagArray(NUM_COLS,sptEIDCol) =
+	{
+		NUM_COLS,
+		PR_ENTRYID,
+	};
+	if (!lpMAPISession) return MAPI_E_INVALID_PARAMETER;
+
+	CORg(lpMAPISession->GetMsgStoresTable(0, &pStoresTbl));
+
+	// set up restriction for the default store
+	sres.rt = RES_PROPERTY; // gonna compare a property
+	sres.res.resProperty.relop = RELOP_EQ; // gonna test equality
+	sres.res.resProperty.ulPropTag = PR_DEFAULT_STORE; // tag to compare
+	sres.res.resProperty.lpProp = &spv; // prop tag to compare against
+
+	spv.ulPropTag = PR_DEFAULT_STORE; // tag type
+	spv.Value.b	= true; // tag value
+
+	CORg(HrQueryAllRows(
+		pStoresTbl,						// table to query
+		(LPSPropTagArray) &sptEIDCol,	// columns to get
+		&sres,							// restriction to use
+		NULL,							// sort order
+		0,								// max number of rows - 0 means ALL
+		&pRow));
+
+	if (pRow && pRow->cRows)
+	{
+		CORg(CallOpenMsgStore(
+			lpMAPISession,
+			NULL,
+			&pRow->aRow[0].lpProps[EID].Value.bin,
+			MDB_WRITE,
+			lppDefaultMDB));
+	}
+	else hr = MAPI_E_NOT_FOUND;
+
+Cleanup:
+
+	if (pRow) FreeProws(pRow);
+	if (pStoresTbl) pStoresTbl->Release();
+	return hr;
+Error:
+	goto Cleanup;
+} // OpenDefaultMessageStore
+
+HRESULT OperationBase::CallOpenMsgStore(
+						 _In_ LPMAPISESSION	lpSession,
+						 _In_ ULONG_PTR		ulUIParam,
+						 _In_ LPSBinary		lpEID,
+						 ULONG			ulFlags,
+						 _Deref_out_ LPMDB*			lpMDB)
+{
+	if (!lpSession || !lpMDB || !lpEID) return MAPI_E_INVALID_PARAMETER;
+
+	HRESULT hr = S_OK;
+
+	// MAPIFolders always uses MDB_ONLINE
+	ulFlags |= MDB_ONLINE;
+
+	CORg(lpSession->OpenMsgStore(
+		ulUIParam,
+		lpEID->cb,
+		(LPENTRYID) lpEID->lpb,
+		NULL,
+		ulFlags,
+		(LPMDB*) lpMDB));
+
+	// MAPIFolders will never hit this statement due to the CORg macro
+	// This is intentional
+	if (MAPI_E_UNKNOWN_FLAGS == hr && (ulFlags & MDB_ONLINE))
+	{
+		hr = S_OK;
+		// perhaps this store doesn't know the MDB_ONLINE flag - remove and retry
+		ulFlags = ulFlags & ~MDB_ONLINE;
+		CORg(lpSession->OpenMsgStore(
+			ulUIParam,
+			lpEID->cb,
+			(LPENTRYID) lpEID->lpb,
+			NULL,
+			ulFlags,
+			(LPMDB*) lpMDB));
+	}
+
+Cleanup:
+	return hr;
+Error:
+	goto Cleanup;
+} // CallOpenMsgStore
+
+// From MFCMapi MapiFunctions.cpp
+// if cchszW == -1, WideCharToMultiByte will compute the length
+// Delete with delete[]
+HRESULT OperationBase::UnicodeToAnsi(_In_z_ LPCWSTR pszW, _Out_z_cap_(cchszW) LPSTR* ppszA, size_t cchszW)
+{
+	HRESULT hr = S_OK;
+	if (!ppszA) return MAPI_E_INVALID_PARAMETER;
+	*ppszA = NULL;
+	if (NULL == pszW) return S_OK;
+
+	// Get our buffer size
+	int iRet = 0;
+	iRet = WideCharToMultiByte(
+		CP_ACP,
+		0,
+		pszW,
+		(int) cchszW,
+		NULL,
+		NULL,
+		NULL,
+		NULL);
+
+	if (SUCCEEDED(hr) && 0 != iRet)
+	{
+		// WideCharToMultiByte returns num of bytes
+		LPSTR pszA = (LPSTR) new BYTE[iRet];
+
+		iRet = WideCharToMultiByte(
+			CP_ACP,
+			0,
+			pszW,
+			(int) cchszW,
+			pszA,
+			iRet,
+			NULL,
+			NULL);
+		if (SUCCEEDED(hr))
+		{
+			*ppszA = pszA;
+		}
+		else
+		{
+			delete[] pszA;
+		}
+	}
+Error:
+	return hr;
+} // UnicodeToAnsi
+
+// if cchszA == -1, MultiByteToWideChar will compute the length
+// Delete with delete[]
+HRESULT OperationBase::AnsiToUnicode(_In_opt_z_ LPCSTR pszA, _Out_z_cap_(cchszA) LPWSTR* ppszW, size_t cchszA)
+{
+	HRESULT hr = S_OK;
+	if (!ppszW) return MAPI_E_INVALID_PARAMETER;
+	*ppszW = NULL;
+	if (NULL == pszA) return S_OK;
+	if (!cchszA) return S_OK;
+
+	// Get our buffer size
+	int iRet = 0;
+	iRet = MultiByteToWideChar(
+		CP_ACP,
+		0,
+		pszA,
+		(int) cchszA,
+		NULL,
+		NULL);
+
+	if (SUCCEEDED(hr) && 0 != iRet)
+	{
+		// MultiByteToWideChar returns num of chars
+		LPWSTR pszW = new WCHAR[iRet];
+
+		iRet = MultiByteToWideChar(
+			CP_ACP,
+			0,
+			pszA,
+			(int) cchszA,
+			pszW,
+			iRet);
+		if (SUCCEEDED(hr))
+		{
+			*ppszW = pszW;
+		}
+		else
+		{
+			delete[] pszW;
+		}
+	}
+Error:
+
+	return hr;
+} // AnsiToUnicode
+
+HRESULT OperationBase::GetServerName(_In_ LPMAPISESSION lpSession, _Deref_out_opt_z_ LPTSTR* szServerName)
+{
+	HRESULT			hr = S_OK;
+	LPSERVICEADMIN	pSvcAdmin = NULL;
+	LPPROFSECT		pGlobalProfSect = NULL;
+	LPSPropValue	lpServerName	= NULL;
+
+	if (!lpSession) return MAPI_E_INVALID_PARAMETER;
+
+	*szServerName = NULL;
+
+	CORg(lpSession->AdminServices(
+		0,
+		&pSvcAdmin));
+
+	CORg(pSvcAdmin->OpenProfileSection(
+		(LPMAPIUID)pbGlobalProfileSectionGuid,
+		NULL,
+		0,
+		&pGlobalProfSect));
+
+	CORg(HrGetOneProp(pGlobalProfSect,
+		PR_PROFILE_HOME_SERVER,
+		&lpServerName));
+
+	if (CheckStringProp(lpServerName,PT_STRING8)) // profiles are ASCII only
+	{
+#ifdef UNICODE
+		LPWSTR	szWideServer = NULL;
+		CORg(AnsiToUnicode(
+			lpServerName->Value.lpszA,
+			&szWideServer,-1));
+		CORg(CopyStringW(szServerName,szWideServer,NULL));
+		delete[] szWideServer;
+#else
+		CORg(CopyStringA(szServerName,lpServerName->Value.lpszA,NULL));
+#endif
+	}
+
+	MAPIFreeBuffer(lpServerName);
+	if (pGlobalProfSect) pGlobalProfSect->Release();
+	if (pSvcAdmin) pSvcAdmin->Release();
+Error:
+
+	return hr;
+} // GetServerName
+
+bool OperationBase::CheckStringProp(_In_opt_ LPSPropValue lpProp, ULONG ulPropType)
+{
+	if (PT_STRING8 != ulPropType && PT_UNICODE != ulPropType)
+	{
+		return false;
+	}
+	if (!lpProp)
+	{
+		return false;
+	}
+
+	if (PT_ERROR == PROP_TYPE(lpProp->ulPropTag))
+	{
+		return false;
+	}
+
+	if (ulPropType != PROP_TYPE(lpProp->ulPropTag))
+	{
+		return false;
+	}
+
+	if (NULL == lpProp->Value.LPSZ)
+	{
+		return false;
+	}
+
+	if (PT_STRING8 == ulPropType && NULL == lpProp->Value.lpszA[0])
+	{
+		return false;
+	}
+
+	if (PT_UNICODE == ulPropType && NULL == lpProp->Value.lpszW[0])
+	{
+		return false;
+	}
+
+	return true;
+} // CheckStringProp
+
+HRESULT OperationBase::CopyStringW(_Deref_out_z_ LPWSTR* lpszDestination, _In_z_ LPCWSTR szSource, _In_opt_ LPVOID pParent)
+{
+	HRESULT	hr = S_OK;
+	size_t	cbSource = 0;
+
+	if (!szSource)
+	{
+		*lpszDestination = NULL;
+		return hr;
+	}
+
+	CORg(StringCbLengthW(szSource,STRSAFE_MAX_CCH * sizeof(WCHAR),&cbSource));
+	cbSource += sizeof(WCHAR);
+
+	if (pParent)
+	{
+		CORg(MAPIAllocateMore(
+			(ULONG) cbSource,
+			pParent,
+			(LPVOID*) lpszDestination));
+	}
+	else
+	{
+		CORg(MAPIAllocateBuffer(
+			(ULONG) cbSource,
+			(LPVOID*) lpszDestination));
+	}
+	CORg(StringCbCopyW(*lpszDestination, cbSource, szSource));
+Error:
+
+	return hr;
+} // CopyStringW

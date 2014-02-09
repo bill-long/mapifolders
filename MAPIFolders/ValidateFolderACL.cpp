@@ -345,7 +345,13 @@ void ValidateFolderACL::FixACL(LPMAPIFOLDER folder)
 	for (x = 0; x < pRowsBefore->cRows; x++)
 	{
 		tcout << "     " << pRowsBefore->aRow[x].lpProps[ePR_MEMBER_NAME].Value.lpszW << "," << 
-			pRowsBefore->aRow[x].lpProps[ePR_MEMBER_RIGHTS].Value.l << std::endl;
+			pRowsBefore->aRow[x].lpProps[ePR_MEMBER_RIGHTS].Value.l;
+#ifdef DEBUG
+		tcout << "," <<
+			pRowsBefore->aRow[x].lpProps[ePR_MEMBER_ID].Value.bin.cb << ","; // member ID value is stored in cb... weird, but whatever
+		OutputSBinary(pRowsBefore->aRow[x].lpProps[ePR_MEMBER_ENTRYID].Value.bin);
+#endif
+		tcout << std::endl;
 
 		if (strAnonymous == tstring(pRowsBefore->aRow[x].lpProps[ePR_MEMBER_NAME].Value.lpszW))
 		{
@@ -411,7 +417,10 @@ void ValidateFolderACL::FixACL(LPMAPIFOLDER folder)
 			rowListRemove.aEntries->ulRowFlags = ROW_REMOVE;
 			rowListRemove.aEntries->cValues = 1;
 			rowListRemove.aEntries->rgPropVals = &propRemove[0];
-
+			
+#ifdef DEBUG
+			tcout << "    Removing member ID: " << savedACEs[x].memberID.cb << std::endl;
+#endif
 			CORg(lpExchModTbl->ModifyTable(0, &rowListRemove));
 		}
 
@@ -436,20 +445,34 @@ void ValidateFolderACL::FixACL(LPMAPIFOLDER folder)
 		rowListAdd.aEntries->cValues = 2;
 		rowListAdd.aEntries->rgPropVals = &propAdd[0];
 
+#ifdef DEBUG
+		tcout << "    Adding entry ID: ";
+		OutputSBinary(savedACEs[x].entryID);
+		tcout << std::endl;
+#endif
 		CORg(lpExchModTbl->ModifyTable(0, &rowListAdd));
 	}
 
 	// Finally, if we didn't find Anonymous, add it now
+	// This approach works on E15, but might not work
+	// on older versions of Exchange. Need to test.
 	if (!foundAnonymous)
 	{
-		SPropValue prop[1] = {0};
+		SBinary anonMemberID = {0};
+		anonMemberID.cb = 0xFFFFFFFF;
+		anonMemberID.lpb = (LPBYTE)0xFFFFFFFF;
+
+		SPropValue prop[2] = {0};
 		prop[0].ulPropTag = PR_MEMBER_ID;
-		prop[0].Value.dbl = -1;
+		prop[0].Value.bin.cb = anonMemberID.cb;
+		prop[0].Value.bin.lpb = anonMemberID.lpb;
+		prop[1].ulPropTag = PR_MEMBER_RIGHTS;
+		prop[1].Value.l = ROLE_NONE;
 
 		ROWLIST rowList = {0};
 		rowList.cEntries = 1;
-		rowList.aEntries->ulRowFlags = ROW_ADD;
-		rowList.aEntries->cValues = 1;
+		rowList.aEntries->ulRowFlags = ROW_MODIFY;
+		rowList.aEntries->cValues = 2;
 		rowList.aEntries->rgPropVals = &prop[0];
 
 		CORg(lpExchModTbl->ModifyTable(0, &rowList));
@@ -477,7 +500,13 @@ void ValidateFolderACL::FixACL(LPMAPIFOLDER folder)
 	for (x = 0; x < pRowsTemp->cRows; x++)
 	{
 		tcout << "     " << pRowsTemp->aRow[x].lpProps[ePR_MEMBER_NAME].Value.lpszW << "," << 
-			pRowsTemp->aRow[x].lpProps[ePR_MEMBER_RIGHTS].Value.l << std::endl;
+			pRowsTemp->aRow[x].lpProps[ePR_MEMBER_RIGHTS].Value.l;
+#ifdef DEBUG
+		tcout << "," <<
+			pRowsTemp->aRow[x].lpProps[ePR_MEMBER_ID].Value.bin.cb << ","; // member ID value is stored in cb... weird, but whatever
+		OutputSBinary(pRowsTemp->aRow[x].lpProps[ePR_MEMBER_ENTRYID].Value.bin);
+		tcout << std::endl;
+#endif
 	}
 
 	tcout << std::endl;
