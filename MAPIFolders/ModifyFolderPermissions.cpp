@@ -3,8 +3,8 @@
 #include "ModifyFolderPermissions.h"
 #include "OperationBase.h"
 
-ModifyFolderPermissions::ModifyFolderPermissions(tstring *pstrBasePath, tstring *pstrMailbox, UserArgs::ActionScope nScope, bool remove, tstring *pstrUserString, tstring *pstrRightsString)
-	:OperationBase(pstrBasePath, pstrMailbox, nScope)
+ModifyFolderPermissions::ModifyFolderPermissions(tstring *pstrBasePath, tstring *pstrMailbox, UserArgs::ActionScope nScope, bool remove, tstring *pstrUserString, tstring *pstrRightsString, Log *log)
+	:OperationBase(pstrBasePath, pstrMailbox, nScope, log)
 {
 	this->remove = remove;
 	this->pstrUserString = pstrUserString;
@@ -23,7 +23,7 @@ HRESULT ModifyFolderPermissions::Initialize(void)
 	{
 		if (this->remove)
 		{
-			tcout << _T("Error: Removing Anonymous is not permitted.") << std::endl;
+			*pLog << _T("Error: Removing Anonymous is not permitted.") << "\n";
 			hr = MAPI_E_INVALID_PARAMETER;
 			goto Error;
 		}
@@ -34,7 +34,7 @@ HRESULT ModifyFolderPermissions::Initialize(void)
 	{
 		if (this->remove)
 		{
-			tcout << _T("Error: Removing Default is not permitted.") << std::endl;
+			*pLog << _T("Error: Removing Default is not permitted.") << "\n";
 			hr = MAPI_E_INVALID_PARAMETER;
 			goto Error;
 		}
@@ -47,7 +47,7 @@ HRESULT ModifyFolderPermissions::Initialize(void)
 		if (this->resolvedUserEID == NULL)
 		{
 			hr = MAPI_E_NOT_FOUND;
-			tcout << _T("Could not resolve the specified user name.") << std::endl;
+			*pLog << _T("Could not resolve the specified user name.") << "\n";
 			goto Error;
 		}
 	}
@@ -93,7 +93,7 @@ void ModifyFolderPermissions::ProcessFolder(LPMAPIFOLDER folder, tstring folderP
 	ROWLIST      rowList  = {0};
 	UINT x = 0;
 
-	tcout << _T("Modifying permissions on folder: ") << folderPath.c_str() << std::endl;
+	*pLog << _T("Modifying permissions on folder: ") << folderPath.c_str() << "\n";
 
 	CORg(folder->OpenProperty(PR_ACL_TABLE, &IID_IExchangeModifyTable, 0, MAPI_DEFERRED_ERRORS, (LPUNKNOWN*)&lpExchModTbl));
 	CORg(lpExchModTbl->GetTable(0, &lpMapiTable));
@@ -161,7 +161,7 @@ void ModifyFolderPermissions::ProcessFolder(LPMAPIFOLDER folder, tstring folderP
 	{
 		if (this->remove)
 		{
-			tcout << _T("     Specified user not present. No changes needed.") << std::endl;
+			*pLog << _T("     Specified user not present. No changes needed.") << "\n";
 		}
 		else
 		{

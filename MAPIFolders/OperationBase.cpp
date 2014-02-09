@@ -3,14 +3,14 @@
 #include "MAPIFolders.h"
 #include <algorithm>
 
-OperationBase::OperationBase(tstring *pstrBasePath, tstring *pstrMailbox, UserArgs::ActionScope nScope)
+OperationBase::OperationBase(tstring *pstrBasePath, tstring *pstrMailbox, UserArgs::ActionScope nScope, Log *log)
 {
 	this->lpAdminMDB = NULL;
 	this->strBasePath = pstrBasePath;
 	this->strMailbox = pstrMailbox;
 	this->nScope = nScope;
+	this->pLog = log;
 }
-
 
 OperationBase::~OperationBase(void)
 {
@@ -69,7 +69,7 @@ HRESULT OperationBase::Initialize(void)
 	}
 	if (lpRootFolder == NULL)
 	{
-		tcout << "Failed to get root folder" << std::endl;
+		*pLog << "Failed to get root folder" << "\n";
 		hr = MAPI_E_NOT_FOUND;
 		goto Error;
 	}
@@ -77,7 +77,7 @@ HRESULT OperationBase::Initialize(void)
 	lpStartingFolder = GetStartingFolder(lpSession, &startingPath);
 	if (lpStartingFolder == NULL)
 	{
-		tcout << "Failed to find the specified folder" << std::endl;
+		*pLog << "Failed to find the specified folder" << "\n";
 		hr = MAPI_E_NOT_FOUND;
 		goto Error;
 	}
@@ -115,7 +115,7 @@ LPMAPIFOLDER OperationBase::GetMailboxRoot(IMAPISession *pSession)
 	LPCTSTR	szServerNamePTR = NULL;
 	LPTSTR lpszMsgStoreDN = NULL;
 
-	tcout << "Resolving mailbox: " << this->strMailbox->c_str() << std::endl;
+	*pLog << "Resolving mailbox: " << this->strMailbox->c_str() << "\n";
 
 	enum
 	{
@@ -147,7 +147,7 @@ LPMAPIFOLDER OperationBase::GetMailboxRoot(IMAPISession *pSession)
 			SPropValue thisProp = lpAdrList->aEntries[0].rgPropVals[x];
 			if (thisProp.ulPropTag == PR_ADDRTYPE)
 			{
-				tcout << "    PR_ADDRTYPE: " << thisProp.Value.LPSZ << std::endl;
+				*pLog << "    PR_ADDRTYPE: " << thisProp.Value.LPSZ << "\n";
 				if (tstring(_T("EX")).compare(thisProp.Value.LPSZ) == 0)
 				{
 					foundEXAddressType = true;
@@ -155,11 +155,11 @@ LPMAPIFOLDER OperationBase::GetMailboxRoot(IMAPISession *pSession)
 			}
 			else if (thisProp.ulPropTag == PR_DISPLAY_NAME)
 			{
-				tcout << "    PR_DISPLAY_NAME: " << thisProp.Value.LPSZ << std::endl;
+				*pLog << "    PR_DISPLAY_NAME: " << thisProp.Value.LPSZ << "\n";
 			}
 			else if (thisProp.ulPropTag == PR_EMAIL_ADDRESS)
 			{
-				tcout << "    PR_EMAIL_ADDRESS: " << thisProp.Value.LPSZ << std::endl;
+				*pLog << "    PR_EMAIL_ADDRESS: " << thisProp.Value.LPSZ << "\n";
 				emailAddress = thisProp.Value.LPSZ;
 			}
 		}
@@ -212,7 +212,7 @@ LPMAPIFOLDER OperationBase::GetMailboxRoot(IMAPISession *pSession)
 
 	if (mailboxEID.cb == 0)
 	{
-		tcout << _T("Could not resolve mailbox.") << std::endl;
+		*pLog << _T("Could not resolve mailbox.") << "\n";
 		hr = MAPI_E_NOT_FOUND;
 		goto Error;
 	}
@@ -276,7 +276,7 @@ LPMAPIFOLDER OperationBase::GetPFRoot(IMAPISession *pSession)
 
 	CORg(spTable->QueryRows(50, 0, &pmrows));
 
-	tcout << "Found " << pmrows->cRows << " stores in MAPI profile:" << std::endl;
+	*pLog << "Found " << pmrows->cRows << " stores in MAPI profile:" << "\n";
 	for (UINT i=0; i != pmrows->cRows; i++)
 	{
 		SRow *prow = pmrows->aRow + i;
@@ -284,7 +284,7 @@ LPMAPIFOLDER OperationBase::GetPFRoot(IMAPISession *pSession)
 		if (PR_DISPLAY_NAME == prow->lpProps[COL_DISPLAYNAME].ulPropTag)
 			pwz = prow->lpProps[COL_DISPLAYNAME].Value.LPSZ;
 		if (pwz)
-			tcout << " " << std::setw(4) << i << ": " << (pwz ? pwz : _T("<NULL>")) << std::endl;
+			*pLog << " " << std::setw(4) << i << ": " << (pwz ? pwz : _T("<NULL>")) << "\n";
 
 		if (IsEqualMAPIUID(prow->lpProps[COL_MDB_PROVIDER].Value.bin.lpb,pbExchangeProviderPublicGuid))
 		{
@@ -295,17 +295,17 @@ LPMAPIFOLDER OperationBase::GetPFRoot(IMAPISession *pSession)
 
 	if (!foundPFStore)
 	{
-		tcout << "No public folder database in MAPI profile." << std::endl;
+		*pLog << "No public folder database in MAPI profile." << "\n";
 		goto Error;
 	}
 
 	if (publicEntryID.cb < 1)
 	{
-		tcout << "Could not get public folder store entry ID." << std::endl;
+		*pLog << "Could not get public folder store entry ID." << "\n";
 		goto Error;
 	}
 
-	tcout << "Opening public folders..." << std::endl;
+	*pLog << "Opening public folders..." << "\n";
 	CORg(pSession->OpenMsgStore(NULL, publicEntryID.cb, (LPENTRYID)publicEntryID.lpb, NULL,
 		MAPI_BEST_ACCESS | MDB_ONLINE, &lpMDB));
 
@@ -314,7 +314,7 @@ LPMAPIFOLDER OperationBase::GetPFRoot(IMAPISession *pSession)
 			PR_HIERARCHY_SERVER,
 			&lpServerName));
 
-	tcout << "Using public folder server/mailbox: " << lpServerName->Value.LPSZ << std::endl;
+	*pLog << "Using public folder server/mailbox: " << lpServerName->Value.LPSZ << "\n";
 	LPTSTR szServerName = lpServerName->Value.LPSZ;
 	LPCTSTR szServerNamePTR = szServerName;
 	CORg(BuildServerDN(
@@ -462,7 +462,7 @@ LPMAPIFOLDER OperationBase::GetStartingFolder(IMAPISession *pSession, tstring *c
 		CORg(GetSubfolderByName(lpTopFolder, splitPath.at(startIndex), &returnedFolder, &realFolderName));
 		if (returnedFolder == NULL)
 		{
-			tcout << "Could not find folder: " << splitPath.at(startIndex) << std::endl;
+			*pLog << "Could not find folder: " << splitPath.at(startIndex) << "\n";
 			goto Error;
 		}
 
@@ -477,7 +477,7 @@ LPMAPIFOLDER OperationBase::GetStartingFolder(IMAPISession *pSession, tstring *c
 			CORg(GetSubfolderByName(parentFolder, splitPath.at(x), &returnedFolder, &returnedFolderName));
 			if (returnedFolder == NULL || returnedFolderName.length() < 1)
 			{
-				tcout << "Could not find folder: " << splitPath.at(x) << std::endl;
+				*pLog << "Could not find folder: " << splitPath.at(x) << "\n";
 				parentFolder->Release();
 				goto Error;
 			}
@@ -588,19 +588,19 @@ RetryGetHierarchyTable:
 		{
 			if (hr == MAPI_E_TIMEOUT)
 			{
-				tcout << "     Encountered a timeout in GetHierarchyTable. Retrying in 5 seconds..." << std::endl;
+				*pLog << "     Encountered a timeout in GetHierarchyTable. Retrying in 5 seconds..." << "\n";
 				Sleep(5000);
 				goto RetryGetHierarchyTable;
 			}
 			else if (hr == MAPI_E_NETWORK_ERROR)
 			{
-				tcout << "     Encountered a network error in GetHierarchyTable. Retrying in 5 seconds..." << std::endl;
+				*pLog << "     Encountered a network error in GetHierarchyTable. Retrying in 5 seconds..." << "\n";
 				Sleep(5000);
 				goto RetryGetHierarchyTable;
 			}
 			else
 			{
-				tcout << "     GetHierarchyTable returned an error. hr = " << std::hex << hr << std::endl;
+				*pLog << "     GetHierarchyTable returned an error. hr = " << std::hex << hr << "\n";
 				goto Error;
 			}
 		}
@@ -614,21 +614,21 @@ RetryQueryRows:
 		{
 			if (hr == MAPI_E_TIMEOUT)
 			{
-				tcout << "     Encountered a timeout in QueryRows. Retrying in 5 seconds..." << std::endl;
+				*pLog << "     Encountered a timeout in QueryRows. Retrying in 5 seconds..." << "\n";
 				pmrows = NULL;
 				Sleep(5000);
 				goto RetryQueryRows;
 			}
 			else if (hr == MAPI_E_NETWORK_ERROR)
 			{
-				tcout << "     Encountered a network error in QueryRows. Retrying in 5 seconds..." << std::endl;
+				*pLog << "     Encountered a network error in QueryRows. Retrying in 5 seconds..." << "\n";
 				pmrows = NULL;
 				Sleep(5000);
 				goto RetryQueryRows;
 			}
 			else
 			{
-				tcout << "     QueryRows returned an error. hr = " << std::hex << hr << std::endl;
+				*pLog << "     QueryRows returned an error. hr = " << std::hex << hr << "\n";
 				goto Error;
 			}
 		}
@@ -653,19 +653,19 @@ RetryOpenEntry:
 			{
 				if (hr == MAPI_E_TIMEOUT)
 				{
-					tcout << "     Encountered a timeout in OpenEntry. Retrying in 5 seconds..." << std::endl;
+					*pLog << "     Encountered a timeout in OpenEntry. Retrying in 5 seconds..." << "\n";
 					Sleep(5000);
 					goto RetryOpenEntry;
 				}
 				else if (hr == MAPI_E_NETWORK_ERROR)
 				{
-					tcout << "     Encountered a network error in OpenEntry. Retrying in 5 seconds..." << std::endl;
+					*pLog << "     Encountered a network error in OpenEntry. Retrying in 5 seconds..." << "\n";
 					Sleep(5000);
 					goto RetryOpenEntry;
 				}
 				else
 				{
-					tcout << "     OpenEntry returned an error. hr = " << std::hex << hr << std::endl;
+					*pLog << "     OpenEntry returned an error. hr = " << std::hex << hr << "\n";
 				}
 			}
 
@@ -909,7 +909,7 @@ void OperationBase::OutputSBinary(SBinary lpsbin)
 {
 	for (UINT x = 0; x < lpsbin.cb; x++)
 	{
-		tcout << std::hex << static_cast<int>(lpsbin.lpb[x]);
+		*pLog << std::hex << static_cast<int>(lpsbin.lpb[x]);
 	}
 }
 

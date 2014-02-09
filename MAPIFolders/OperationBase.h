@@ -19,13 +19,14 @@
 #include <string>
 
 #include "UserArgs.h"
+#include "Log.h"
 
 #define MDB_ONLINE 0x100
 
 class OperationBase
 {
 public:
-	OperationBase(tstring *basePath, tstring *mailbox, UserArgs::ActionScope scope);
+	OperationBase(tstring *basePath, tstring *mailbox, UserArgs::ActionScope scope, Log *log);
 	~OperationBase(void);
 	HRESULT OperationBase::Initialize(void);
 	void DoOperation();
@@ -37,6 +38,7 @@ public:
 	void OperationBase::OutputSBinary(SBinary lpsbin);
 	HRESULT OperationBase::HrAllocAdrList(ULONG ulNumProps, _Deref_out_opt_ LPADRLIST* lpAdrList);
 	LPMAPISESSION lpSession;
+	Log *pLog;
 
 private:
 	LPMAPIFOLDER GetPFRoot(IMAPISession *pSession);

@@ -11,8 +11,8 @@
 		hr = _hr; \
 		if (FAILED(hr)) \
 		{ \
-			tcout << "FAILED! hr = " << std::hex << hr << ".  LINE = " << std::dec << __LINE__ << std::endl; \
-			tcout << " >>> " << (wchar_t*) L#_hr <<  std::endl; \
+			*pLog << "FAILED! hr = " << std::hex << hr << ".  LINE = " << std::dec << __LINE__ << "\n"; \
+			*pLog << " >>> " << (wchar_t*) L#_hr <<  "\n"; \
 			goto Error; \
 		} \
 	} while (0)
@@ -20,6 +20,7 @@
 #include "OperationBase.h"
 #include "ValidateFolderACL.h"
 #include "ModifyFolderPermissions.h"
+#include "Log.h"
 
 enum {
     ePR_MEMBER_ENTRYID, 

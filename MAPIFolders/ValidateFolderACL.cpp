@@ -9,8 +9,8 @@ struct SavedACEInfo
 	long accessRights;
 };
 
-ValidateFolderACL::ValidateFolderACL(tstring *pstrBasePath, tstring *pstrMailbox, UserArgs::ActionScope nScope, bool fixBadACLs)
-	:OperationBase(pstrBasePath, pstrMailbox, nScope)
+ValidateFolderACL::ValidateFolderACL(tstring *pstrBasePath, tstring *pstrMailbox, UserArgs::ActionScope nScope, bool fixBadACLs, Log *log)
+	:OperationBase(pstrBasePath, pstrMailbox, nScope, log)
 {
 	this->FixBadACLs = fixBadACLs;
 	this->IsInitialized = false;
@@ -31,14 +31,14 @@ HRESULT ValidateFolderACL::Initialize(void)
 
 	if (!this->psidAnonymous)
 	{
-		tcout << "Failed to allocate memory" << std::endl;
+		*pLog << "Failed to allocate memory" << "\n";
 		hr = HRESULT_FROM_WIN32(GetLastError());
 		goto Error;
 	}
 
 	if (!CreateWellKnownSid(WinAnonymousSid, NULL, this->psidAnonymous, &dwLength))
 	{
-		tcout << "Failed to create Anonymous SID" << std::endl;
+		*pLog << "Failed to create Anonymous SID" << "\n";
 		hr = HRESULT_FROM_WIN32(GetLastError());
 		goto Error;
 	}
@@ -63,11 +63,11 @@ void ValidateFolderACL::ProcessFolder(LPMAPIFOLDER folder, tstring folderPath)
 
 	if (!this->IsInitialized)
 	{
-		tcout << "Operation was not initialized." << std::endl;
+		*pLog << "Operation was not initialized." << "\n";
 		goto Error;
 	}
 
-	tcout << "Checking ACL on folder: " << folderPath.c_str() << std::endl;
+	*pLog << "Checking ACL on folder: " << folderPath.c_str() << "\n";
 
 RetryGetProps:
 	hr = folder->GetProps(&rgPropTag, NULL, &cValues, &lpPropValue);
@@ -75,13 +75,13 @@ RetryGetProps:
 	{
 		if (hr == MAPI_E_TIMEOUT)
 		{
-			tcout << "     Encountered a timeout trying to read the security descriptor. Retrying in 5 seconds..." << std::endl;
+			*pLog << "     Encountered a timeout trying to read the security descriptor. Retrying in 5 seconds..." << "\n";
 			Sleep(5000);
 			goto RetryGetProps;
 		}
 		else
 		{
-			tcout << "     Failed to read security descriptor on this folder. hr = " << std::hex << hr << std::endl;
+			*pLog << "     Failed to read security descriptor on this folder. hr = " << std::hex << hr << "\n";
 			goto Error;
 		}
 	}
@@ -91,7 +91,7 @@ RetryGetProps:
 		PSECURITY_DESCRIPTOR pSecurityDescriptor = SECURITY_DESCRIPTOR_OF(lpPropValue->Value.bin.lpb);
 		if (!IsValidSecurityDescriptor(pSecurityDescriptor))
 		{
-			tcout << "     Invalid security descriptor." << std::endl;
+			*pLog << "     Invalid security descriptor." << "\n";
 			goto Error;
 		}
 
@@ -103,7 +103,7 @@ RetryGetProps:
 
 		if (!(succeeded && bValidDACL && pACL))
 		{
-			tcout << "     Invalid DACL." << std::endl;
+			*pLog << "     Invalid DACL." << "\n";
 			goto Error;
 		}
 
@@ -116,7 +116,7 @@ RetryGetProps:
 
 		if (!succeeded)
 		{
-			tcout << "     Could not get ACL information." << std::endl;
+			*pLog << "     Could not get ACL information." << "\n";
 			goto Error;
 		}
 
@@ -235,7 +235,7 @@ RetryGetProps:
 				}
 				else if (AceType == ACCESS_ALLOWED_ACE_TYPE && SidNameUse == SidTypeGroup && groupDenyEncountered == true)
 				{
-					tcout << "     ACL on this folder is non-canonical" << std::endl;
+					*pLog << "     ACL on this folder is non-canonical" << "\n";
 					aclIsNonCanonical = true;
 				}
 
@@ -247,7 +247,7 @@ RetryGetProps:
 
 		if (!foundAnonymous)
 		{
-			tcout << "     ACL is missing Anonymous" << std::endl;
+			*pLog << "     ACL is missing Anonymous" << "\n";
 			aclIsNonCanonical = true;
 		}
 
@@ -296,7 +296,7 @@ HRESULT ValidateFolderACL::CheckACLTable(LPMAPIFOLDER folder, bool &aclTableIsGo
 
 			if (pRows->aRow[x].lpProps[ePR_MEMBER_ID].Value.l == pRows->aRow[y].lpProps[ePR_MEMBER_ID].Value.l)
 			{
-				tcout << "     ACL table has duplicate security principals." << std::endl;
+				*pLog << "     ACL table has duplicate security principals." << "\n";
 				aclTableIsGood = false;
 				break;
 			}
@@ -333,25 +333,25 @@ void ValidateFolderACL::FixACL(LPMAPIFOLDER folder)
 	UINT savedACECount = 0;
 	bool foundAnonymous = false;
 
-	tcout << "     Attempting to fix ACL..." << std::endl;
+	*pLog << "     Attempting to fix ACL..." << "\n";
 
 	CORg(folder->OpenProperty(PR_ACL_TABLE, &IID_IExchangeModifyTable, 0, MAPI_DEFERRED_ERRORS, (LPUNKNOWN*)&lpExchModTbl));
 	CORg(lpExchModTbl->GetTable(0, &lpMapiTable));
 	CORg(lpMapiTable->SetColumns((LPSPropTagArray)&rgAclTablePropTags, 0));
 	CORg(HrQueryAllRows(lpMapiTable, NULL, NULL, NULL, NULL, &pRowsBefore));
 
-	tcout << std::endl << "     ACL table before changes:" << std::endl;
+	*pLog << "\n" << "     ACL table before changes:" << "\n";
 
 	for (x = 0; x < pRowsBefore->cRows; x++)
 	{
-		tcout << "     " << pRowsBefore->aRow[x].lpProps[ePR_MEMBER_NAME].Value.lpszW << "," << 
+		*pLog << "     " << pRowsBefore->aRow[x].lpProps[ePR_MEMBER_NAME].Value.lpszW << "," << 
 			pRowsBefore->aRow[x].lpProps[ePR_MEMBER_RIGHTS].Value.l;
 #ifdef DEBUG
-		tcout << "," <<
+		*pLog << "," <<
 			pRowsBefore->aRow[x].lpProps[ePR_MEMBER_ID].Value.bin.cb << ","; // member ID value is stored in cb... weird, but whatever
 		OutputSBinary(pRowsBefore->aRow[x].lpProps[ePR_MEMBER_ENTRYID].Value.bin);
 #endif
-		tcout << std::endl;
+		*pLog << "\n";
 
 		if (strAnonymous == tstring(pRowsBefore->aRow[x].lpProps[ePR_MEMBER_NAME].Value.lpszW))
 		{
@@ -384,7 +384,7 @@ void ValidateFolderACL::FixACL(LPMAPIFOLDER folder)
 
 				if (savedACECount > 500)
 				{
-					tcout << "     Error: ACL table has too many entries." << std::endl;
+					*pLog << "     Error: ACL table has too many entries." << "\n";
 					goto Error;
 				}
 			}
@@ -419,7 +419,7 @@ void ValidateFolderACL::FixACL(LPMAPIFOLDER folder)
 			rowListRemove.aEntries->rgPropVals = &propRemove[0];
 			
 #ifdef DEBUG
-			tcout << "    Removing member ID: " << savedACEs[x].memberID.cb << std::endl;
+			*pLog << "    Removing member ID: " << savedACEs[x].memberID.cb << "\n";
 #endif
 			CORg(lpExchModTbl->ModifyTable(0, &rowListRemove));
 		}
@@ -446,9 +446,9 @@ void ValidateFolderACL::FixACL(LPMAPIFOLDER folder)
 		rowListAdd.aEntries->rgPropVals = &propAdd[0];
 
 #ifdef DEBUG
-		tcout << "    Adding entry ID: ";
+		*pLog << "    Adding entry ID: ";
 		OutputSBinary(savedACEs[x].entryID);
-		tcout << std::endl;
+		*pLog << "\n";
 #endif
 		CORg(lpExchModTbl->ModifyTable(0, &rowListAdd));
 	}
@@ -495,21 +495,21 @@ void ValidateFolderACL::FixACL(LPMAPIFOLDER folder)
 	CORg(lpExchModTbl->GetTable(0, &lpMapiTable));
 	CORg(lpMapiTable->SetColumns((LPSPropTagArray)&rgAclTablePropTags, 0));
 	CORg(HrQueryAllRows(lpMapiTable, NULL, NULL, NULL, NULL, &pRowsTemp));
-	tcout << std::endl << "     ACL table after changes:" << std::endl;
+	*pLog << "\n" << "     ACL table after changes:" << "\n";
 
 	for (x = 0; x < pRowsTemp->cRows; x++)
 	{
-		tcout << "     " << pRowsTemp->aRow[x].lpProps[ePR_MEMBER_NAME].Value.lpszW << "," << 
+		*pLog << "     " << pRowsTemp->aRow[x].lpProps[ePR_MEMBER_NAME].Value.lpszW << "," << 
 			pRowsTemp->aRow[x].lpProps[ePR_MEMBER_RIGHTS].Value.l;
 #ifdef DEBUG
-		tcout << "," <<
+		*pLog << "," <<
 			pRowsTemp->aRow[x].lpProps[ePR_MEMBER_ID].Value.bin.cb << ","; // member ID value is stored in cb... weird, but whatever
 		OutputSBinary(pRowsTemp->aRow[x].lpProps[ePR_MEMBER_ENTRYID].Value.bin);
-		tcout << std::endl;
+		*pLog << "\n";
 #endif
 	}
 
-	tcout << std::endl;
+	*pLog << "\n";
 
 Cleanup:
 	if (pRowsTemp)
