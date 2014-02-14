@@ -165,6 +165,41 @@ void ModifyFolderPermissions::ProcessFolder(LPMAPIFOLDER folder, tstring folderP
 		}
 		else
 		{
+			// We didn't find who we're looking for, so we're going to add it
+			if (this->resolvedUserEID == NULL)
+			{
+				// But the user specified something without an EntryID. Maybe Anonymous?
+				if (_tcsicmp(pstrUserString->c_str(), _T("Anonymous")) == 0)
+				{
+					// OK so the user specified Anonymous, but this ACL is missing Anonymous.
+					// Let's try to add it. This is copied from ValidateFolderACL.cpp.
+					SBinary anonMemberID = {0};
+					anonMemberID.cb = 0xFFFFFFFF;
+					anonMemberID.lpb = (LPBYTE)0xFFFFFFFF;
+
+					SPropValue prop[2] = {0};
+					prop[0].ulPropTag = PR_MEMBER_ID;
+					prop[0].Value.bin.cb = anonMemberID.cb;
+					prop[0].Value.bin.lpb = anonMemberID.lpb;
+					prop[1].ulPropTag = PR_MEMBER_RIGHTS;
+					prop[1].Value.l = rights;
+
+					ROWLIST rowList = {0};
+					rowList.cEntries = 1;
+					rowList.aEntries->ulRowFlags = ROW_MODIFY;
+					rowList.aEntries->cValues = 2;
+					rowList.aEntries->rgPropVals = &prop[0];
+
+					CORg(lpExchModTbl->ModifyTable(0, &rowList));
+				}
+				else
+				{
+					*pLog << _T("    Error! Specified user was not found in ACL and also could not be resolved.\n");
+					hr = S_FALSE;
+				}
+			}
+			else
+			{
 			SPropValue   prop[2] = {0};
 			prop[0].ulPropTag  = PR_MEMBER_ENTRYID;
 			prop[0].Value.bin.cb = resolvedUserEID->cb;
@@ -178,6 +213,7 @@ void ModifyFolderPermissions::ProcessFolder(LPMAPIFOLDER folder, tstring folderP
 			rowList.aEntries->rgPropVals = &prop[0]; 
 
 			CORg(lpExchModTbl->ModifyTable(0, &rowList));
+			}
 		}
 	}
 
