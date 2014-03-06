@@ -173,14 +173,13 @@ void ModifyFolderPermissions::ProcessFolder(LPMAPIFOLDER folder, tstring folderP
 				{
 					// OK so the user specified Anonymous, but this ACL is missing Anonymous.
 					// Let's try to add it. This is copied from ValidateFolderACL.cpp.
-					SBinary anonMemberID = {0};
-					anonMemberID.cb = 0xFFFFFFFF;
-					anonMemberID.lpb = (LPBYTE)0xFFFFFFFF;
 
 					SPropValue prop[2] = {0};
 					prop[0].ulPropTag = PR_MEMBER_ID;
-					prop[0].Value.bin.cb = anonMemberID.cb;
-					prop[0].Value.bin.lpb = anonMemberID.lpb;
+					// For anonymous, the first 8 bytes of the value all need to be 0xFF. The
+					// easiest way to do this on both x86 and x64 is to just set cur.
+					prop[0].Value.cur.Lo = 0xFFFFFFFF;
+					prop[0].Value.cur.Hi = 0xFFFFFFFF;
 					prop[1].ulPropTag = PR_MEMBER_RIGHTS;
 					prop[1].Value.l = rights;
 

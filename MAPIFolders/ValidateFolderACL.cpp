@@ -458,14 +458,12 @@ void ValidateFolderACL::FixACL(LPMAPIFOLDER folder)
 	// on older versions of Exchange. Need to test.
 	if (!foundAnonymous)
 	{
-		SBinary anonMemberID = {0};
-		anonMemberID.cb = 0xFFFFFFFF;
-		anonMemberID.lpb = (LPBYTE)0xFFFFFFFF;
-
 		SPropValue prop[2] = {0};
 		prop[0].ulPropTag = PR_MEMBER_ID;
-		prop[0].Value.bin.cb = anonMemberID.cb;
-		prop[0].Value.bin.lpb = anonMemberID.lpb;
+		// For anonymous, the first 8 bytes of the value all need to be 0xFF. The
+		// easiest way to do this on both x86 and x64 is to just set cur.
+		prop[0].Value.cur.Lo = 0xFFFFFFFF;
+		prop[0].Value.cur.Hi = 0xFFFFFFFF;
 		prop[1].ulPropTag = PR_MEMBER_RIGHTS;
 		prop[1].Value.l = ROLE_NONE;
 
@@ -505,8 +503,8 @@ void ValidateFolderACL::FixACL(LPMAPIFOLDER folder)
 		*pLog << "," <<
 			pRowsTemp->aRow[x].lpProps[ePR_MEMBER_ID].Value.bin.cb << ","; // member ID value is stored in cb... weird, but whatever
 		OutputSBinary(pRowsTemp->aRow[x].lpProps[ePR_MEMBER_ENTRYID].Value.bin);
-		*pLog << "\n";
 #endif
+		*pLog << "\n";
 	}
 
 	*pLog << "\n";
