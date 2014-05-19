@@ -1,7 +1,7 @@
 #include "stdafx.h"
-#include "MAPIFolders.h"
 #include "ModifyFolderPermissions.h"
 #include "OperationBase.h"
+#include "MAPIFolders.h"
 
 ModifyFolderPermissions::ModifyFolderPermissions(tstring *pstrBasePath, tstring *pstrMailbox, UserArgs::ActionScope nScope, bool remove, tstring *pstrUserString, tstring *pstrRightsString, Log *log)
 	:OperationBase(pstrBasePath, pstrMailbox, nScope, log)

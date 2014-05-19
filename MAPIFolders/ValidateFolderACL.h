@@ -1,5 +1,5 @@
 #pragma once
-#include "operationbase.h"
+#include "OperationBase.h"
 
 #define PR_NT_SECURITY_DESCRIPTOR PROP_TAG(PT_BINARY, 0x0E27) // What header file am I missing?
 

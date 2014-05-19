@@ -15,6 +15,8 @@ const UserArgs::ArgSwitch UserArgs::rgArgSwitches[_COUNTOFACCEPTEDSWITCHES] =
 	{_T("AccessRights"), _T("Access rights to set"), true, RIGHTS},
 	{_T("CheckItems"), _T("Check Items"), false, CHECKITEMS},
 	{_T("FixItems"), _T("Fix Items"), false, FIXITEMS},
+	{_T("RemoveItemProperties"), _T("Remove Item Properties"), false, REMOVEITEMPROPERTIES },
+	{_T("PropertyList"), _T("Property List"), true, PROPLIST },
 	{_T("Scope"), _T("Action Scope"), true, SCOPE},
 	{_T("Mailbox"), _T("Mailbox"), true, MAILBOX},
 	{_T("?"), _T("Help"), false, DISPLAYHELP},
@@ -54,6 +56,7 @@ UserArgs::UserArgs(void)
 	 m_pstrMailbox = NULL;
 	 m_pstrUser = NULL;
 	 m_pstrRights = NULL;
+	 m_pstrProplist = NULL;
 	// Default _actions
 	init();
 }
@@ -292,6 +295,23 @@ bool UserArgs::Parse(int argc, TCHAR* argv[])
 								m_pstrRights = NULL;
 							}
 							m_pstrRights = new tstring(pchCurrent);
+							state = STATE_ADVANCEARG;
+						}
+						break;
+					case PROPLIST:
+						if (m_pstrProplist != NULL)
+						{
+							logError(iCurrentArg, argv[iCurrentArg], ERR_DUPLICATEPROPLIST);
+							state = STATE_FAIL;
+						}
+						else
+						{
+							if (m_pstrProplist)
+							{
+								delete m_pstrProplist;
+								m_pstrProplist = NULL;
+							}
+							m_pstrProplist = new tstring(pchCurrent);
 							state = STATE_ADVANCEARG;
 						}
 						break;

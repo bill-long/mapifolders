@@ -20,6 +20,8 @@
 #include "OperationBase.h"
 #include "ValidateFolderACL.h"
 #include "ModifyFolderPermissions.h"
+#include "ItemPropertiesOperation.h"
+#include "CheckItemsOperation.h"
 #include "Log.h"
 
 enum {

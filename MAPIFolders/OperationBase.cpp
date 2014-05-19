@@ -380,11 +380,12 @@ LPMAPIFOLDER OperationBase::GetStartingFolder(IMAPISession *pSession, tstring *c
 	{
 		lpTopFolder = lpRootFolder;
 		if (this->strBasePath == NULL)
-			userSpecifiedPath = _T("");
+			userSpecifiedPath = _T("\Top Of Information Store");
 		else
 			userSpecifiedPath = *this->strBasePath;
 
 		splitPath = Split(userSpecifiedPath, (_T('\\')));
+		startIndex = 0;
 	}
 	else
 	{

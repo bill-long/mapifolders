@@ -3,7 +3,7 @@
 #include <iostream>
 #include <tchar.h>
 
-#define _COUNTOFACCEPTEDSWITCHES (11)
+#define _COUNTOFACCEPTEDSWITCHES (13)
 #define _COUNTOFSCOPES (3)
 
 typedef std::basic_string<TCHAR> tstring;
@@ -24,6 +24,7 @@ public:
 	bool fRemoveFolderPermission() {return (NULL!=(m_actions & REMOVEFOLDERPERMISSION));}
 	bool fCheckItems() {return (NULL!=(m_actions & CHECKITEMS));}
 	bool fFixItems() {return (NULL!=(m_actions & FIXITEMS));}
+	bool fRemoveItemProperties() { return (NULL != (m_actions & REMOVEITEMPROPERTIES)); }
 	bool fDisplayHelp() {return (NULL!=(m_actions & DISPLAYHELP));}
 
 	// Argument value accessor methods
@@ -31,6 +32,7 @@ public:
 	tstring *pstrMailbox() {return m_pstrMailbox;}
 	tstring *pstrUser() {return m_pstrUser;}
 	tstring *pstrRights() {return m_pstrRights;}
+	tstring *pstrProplist() { return m_pstrProplist; }
 
 	// Enum for the possible scopes for operations
 	enum ActionScope : short int
@@ -98,6 +100,8 @@ private:
 	static const unsigned long REMOVEFOLDERPERMISSION=1<<7;
 	static const unsigned long USER=1<<8; // Not an action
 	static const unsigned long RIGHTS=1<<9; // Not an action
+	static const unsigned long REMOVEITEMPROPERTIES = 1 << 10;
+	static const unsigned long PROPLIST = 1 << 11; // Not an action
 	static const unsigned long DISPLAYHELP=1<<31;	// User requested help in a valid syntax
 
 	// Error codes
@@ -111,6 +115,7 @@ private:
 	static const unsigned long ERR_DUPLICATERIGHTS=1<<6;
 	static const unsigned long ERR_DUPLICATEACTION=1<<7;
 	static const unsigned long ERR_SWITCHNOTVALIDFORTHISACTION=1<<8;
+	static const unsigned long ERR_DUPLICATEPROPLIST = 1 << 9;
 
 	// folder, mailbox (if any), scope of action
 	tstring *m_pstrFolderPath;
@@ -118,6 +123,7 @@ private:
 	ActionScope m_scope;
 	tstring *m_pstrUser;
 	tstring *m_pstrRights;	
+	tstring *m_pstrProplist;
 
 	// An array of switch structures defining the acceptable switches
 	static const ArgSwitch rgArgSwitches[_COUNTOFACCEPTEDSWITCHES];

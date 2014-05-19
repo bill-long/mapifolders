@@ -37,10 +37,12 @@ public:
 	LPSBinary OperationBase::ResolveNameToEID(tstring *pstrName);
 	void OperationBase::OutputSBinary(SBinary lpsbin);
 	HRESULT OperationBase::HrAllocAdrList(ULONG ulNumProps, _Deref_out_opt_ LPADRLIST* lpAdrList);
+	std::vector<tstring> OperationBase::Split(const tstring &s, TCHAR delim);
+	std::vector<tstring> &Split(const tstring &s, TCHAR delim, std::vector<tstring> &elems);
 	LPMAPISESSION lpSession;
 	Log *pLog;
 
-private:
+protected:
 	LPMAPIFOLDER GetPFRoot(IMAPISession *pSession);
 	LPMAPIFOLDER GetMailboxRoot(IMAPISession *pSession);
 	LPMAPIFOLDER OperationBase::GetStartingFolder(IMAPISession *pSession, tstring *calculatedFolderPath);
@@ -50,8 +52,6 @@ private:
 					  _In_z_ LPCTSTR szServerName,
 					  _In_z_ LPCTSTR szPost,
 					  _Deref_out_z_ LPTSTR* lpszServerDN);
-	std::vector<tstring> OperationBase::Split(const tstring &s, TCHAR delim);
-	std::vector<tstring> &Split(const tstring &s, TCHAR delim, std::vector<tstring> &elems);
 	HRESULT OperationBase::OpenDefaultMessageStore(
 								_In_ LPMAPISESSION lpMAPISession,
 								_Deref_out_ LPMDB* lppDefaultMDB);

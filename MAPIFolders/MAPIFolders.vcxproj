@@ -34,7 +34,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <CharacterSet>MultiByte</CharacterSet>
+    <CharacterSet>Unicode</CharacterSet>
     <PlatformToolset>v90</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -156,6 +156,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="CheckItemsOperation.h" />
+    <ClInclude Include="ItemPropertiesOperation.h" />
     <ClInclude Include="Log.h" />
     <ClInclude Include="MAPIFolders.h" />
     <ClInclude Include="ModifyFolderPermissions.h" />
@@ -167,6 +169,8 @@
     <ClInclude Include="ValidateFolderACL.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CheckItemsOperation.cpp" />
+    <ClCompile Include="ItemPropertiesOperation.cpp" />
     <ClCompile Include="Log.cpp" />
     <ClCompile Include="MAPIFolders.cpp" />
     <ClCompile Include="MapiStubLibrary.cpp" />

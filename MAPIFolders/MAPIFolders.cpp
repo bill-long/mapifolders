@@ -93,9 +93,20 @@ int _tmain(int argc, _TCHAR* argv[])
 				op->DoOperation();
 			}
 
+			if (ua.fRemoveItemProperties())
+			{
+				ItemPropertiesOperation *itemsOp = new ItemPropertiesOperation(ua.pstrFolderPath(), ua.pstrMailbox(), ua.nScope(), pLog, ua.pstrProplist());
+				CORg(itemsOp->Initialize());
+				OperationBase *op = itemsOp;
+				op->DoOperation();
+			}
+
 			if(ua.fCheckItems() || ua.fFixItems())
 			{
-				std::cerr << "unimplemented feature." << "\n";
+				CheckItemsOperation *checkItemsOp = new CheckItemsOperation(ua.pstrFolderPath(), ua.pstrMailbox(), ua.nScope(), pLog, ua.fFixItems());
+				CORg(checkItemsOp->Initialize());
+				OperationBase *op = checkItemsOp;
+				op->DoOperation();
 			}
 
 			delete lpTimeStr;
