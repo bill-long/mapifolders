@@ -99,7 +99,12 @@ void CheckItemsOperation::ProcessFolder(LPMAPIFOLDER folder, tstring folderPath)
 
 			ULONG ulObjType = NULL;
 			LPMAPIPROP lpMessage = NULL;
-			folder->OpenEntry(eid.cb, (LPENTRYID)eid.lpb, NULL, MAPI_BEST_ACCESS, &ulObjType, (LPUNKNOWN *)&lpMessage);
+			hr = folder->OpenEntry(eid.cb, (LPENTRYID)eid.lpb, NULL, MAPI_BEST_ACCESS, &ulObjType, (LPUNKNOWN *)&lpMessage);
+			if (hr != S_OK)
+			{
+				*pLog << "        Error opening item: " << hr << "\n";
+				continue;
+			}
 
 			ULONG cCount = 0;
 			SPropValue *rgprops = NULL;
@@ -116,13 +121,15 @@ void CheckItemsOperation::ProcessFolder(LPMAPIFOLDER folder, tstring folderPath)
 
 			if (foundSomeProps && this->fix)
 			{
-				*pLog << "    Deleting these properties... ";
+				*pLog << "        Deleting these properties... ";
 				// If we found any one of the specified props, just send a delete for all of them
 				LPSPropProblemArray problemArray = NULL;
 				CORg(lpMessage->DeleteProps(lpPropsToRemove, &problemArray));
 				CORg(lpMessage->SaveChanges(NULL));
 				*pLog << "Done.\n";
 			}
+
+			lpMessage->Release();
 		}
 	}
 
