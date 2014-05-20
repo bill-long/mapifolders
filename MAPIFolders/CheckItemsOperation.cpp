@@ -30,6 +30,7 @@ void CheckItemsOperation::ProcessFolder(LPMAPIFOLDER folder, tstring folderPath)
 	LPMAPITABLE lpContentsTable = NULL;
 	LPSRowSet pRows = NULL;
 	LPSPropTagArray lpColSet = NULL;
+	LPMAPIPROP lpMessage = NULL;
 
 	LPSPropValue lpFolderType = NULL;
 	CORg(HrGetOneProp(folder, PR_FOLDER_TYPE, &lpFolderType));
@@ -80,6 +81,9 @@ void CheckItemsOperation::ProcessFolder(LPMAPIFOLDER folder, tstring folderPath)
 
 		for (ULONG currentRow = 0; currentRow < pRows->cRows; currentRow++)
 		{
+			if (lpMessage) lpMessage->Release();
+			lpMessage = NULL;
+
 			SRow prow = pRows->aRow[currentRow];
 			LPCTSTR pwzSubject = NULL;
 			SBinary eid = { 0 };
@@ -98,11 +102,10 @@ void CheckItemsOperation::ProcessFolder(LPMAPIFOLDER folder, tstring folderPath)
 			*pLog << "    Checking item: " << (pwzSubject ? pwzSubject : _T("<NULL>")) << "\n";
 
 			ULONG ulObjType = NULL;
-			LPMAPIPROP lpMessage = NULL;
 			hr = folder->OpenEntry(eid.cb, (LPENTRYID)eid.lpb, NULL, MAPI_BEST_ACCESS, &ulObjType, (LPUNKNOWN *)&lpMessage);
 			if (hr != S_OK)
 			{
-				*pLog << "        Error opening item: " << hr << "\n";
+				*pLog << "        Error opening item: " << std::hex << hr << "\n";
 				continue;
 			}
 
@@ -119,6 +122,8 @@ void CheckItemsOperation::ProcessFolder(LPMAPIFOLDER folder, tstring folderPath)
 				}
 			}
 
+			MAPIFreeBuffer(rgprops);
+
 			if (foundSomeProps && this->fix)
 			{
 				*pLog << "        Deleting these properties... ";
@@ -126,10 +131,9 @@ void CheckItemsOperation::ProcessFolder(LPMAPIFOLDER folder, tstring folderPath)
 				LPSPropProblemArray problemArray = NULL;
 				CORg(lpMessage->DeleteProps(lpPropsToRemove, &problemArray));
 				CORg(lpMessage->SaveChanges(NULL));
+				MAPIFreeBuffer(problemArray);
 				*pLog << "Done.\n";
 			}
-
-			lpMessage->Release();
 		}
 	}
 
@@ -138,6 +142,7 @@ Cleanup:
 	if (pRows) FreeProws(pRows);
 	if (lpColSet) MAPIFreeBuffer(lpColSet);
 	if (lpContentsTable) lpContentsTable->Release();
+	if (lpMessage) lpMessage->Release();
 	return;
 
 Error:

@@ -116,6 +116,8 @@ void ItemPropertiesOperation::ProcessFolder(LPMAPIFOLDER folder, tstring folderP
 					break;
 				}
 			}
+
+			lpMessage->Release();
 		}
 	}
 
