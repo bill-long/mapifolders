@@ -380,7 +380,17 @@ LPMAPIFOLDER OperationBase::GetStartingFolder(IMAPISession *pSession, tstring *c
 	{
 		lpTopFolder = lpRootFolder;
 		if (this->strBasePath == NULL)
-			userSpecifiedPath = _T("\Top Of Information Store");
+		{
+			LPSPropValue lpPropVal = NULL;
+			CORg(HrGetOneProp(lpAdminMDB, PR_IPM_SUBTREE_ENTRYID, &lpPropVal));
+			ULONG objType = NULL;
+			LPMAPIFOLDER ipmSubtreeFolder = NULL;
+			CORg(lpAdminMDB->OpenEntry(lpPropVal->Value.bin.cb, (LPENTRYID)lpPropVal->Value.bin.lpb, NULL, MAPI_BEST_ACCESS, &objType, (LPUNKNOWN *)&ipmSubtreeFolder));
+			lpPropVal = NULL;
+			CORg(HrGetOneProp(ipmSubtreeFolder, PR_DISPLAY_NAME, &lpPropVal));
+			userSpecifiedPath = _T("\\");
+			userSpecifiedPath.append(lpPropVal->Value.LPSZ);
+		}
 		else
 			userSpecifiedPath = *this->strBasePath;
 
