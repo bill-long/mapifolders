@@ -47,7 +47,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		}
 		else
 		{
-			Log *pLog = new Log(NULL);
+			Log *pLog = new Log(NULL, true);
 			CORg(pLog->Initialize());
 			LPTSTR lpTimeStr = NULL;
 			int cchTime = GetTimeFormat(LOCALE_SYSTEM_DEFAULT, 0, NULL, NULL, NULL, 0);
@@ -106,6 +106,25 @@ int _tmain(int argc, _TCHAR* argv[])
 				CheckItemsOperation *checkItemsOp = new CheckItemsOperation(ua.pstrFolderPath(), ua.pstrMailbox(), ua.nScope(), pLog, ua.fFixItems());
 				CORg(checkItemsOp->Initialize());
 				OperationBase *op = checkItemsOp;
+				op->DoOperation();
+			}
+
+			if (ua.fExportFolderProperties())
+			{
+				Log *exportFile = new Log(NULL, false);
+				tstring *exportFileName = new tstring(_T("ExportFolderProperties"));
+				exportFileName->append(pLog->pstrTimeString->c_str());
+				exportFileName->append(_T(".csv"));
+				CORg(exportFile->Initialize(exportFileName));
+				ExportFolderPropertiesOperation *exportFoldersOp = new ExportFolderPropertiesOperation(
+					ua.pstrFolderPath(),
+					ua.pstrMailbox(),
+					ua.nScope(),
+					pLog,
+					ua.pstrProplist(),
+					exportFile);
+				CORg(exportFoldersOp->Initialize());
+				OperationBase *op = exportFoldersOp;
 				op->DoOperation();
 			}
 

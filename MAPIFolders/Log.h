@@ -17,9 +17,10 @@
 class Log
 {
 public:
-	Log(tstring *logFolderPath);
+	Log(tstring *logFolderPath, bool consoleOutput);
 	~Log(void);
 	HRESULT Initialize(void);
+	HRESULT Initialize(tstring *filename);
 	tstring *pstrLogFolderPath;
 	tstring *pstrLogFilePath;
 	tstring *pstrTimeString;
@@ -27,8 +28,11 @@ public:
 	template <class T>
 	Log& operator<<(const T& out)
 	{
-		tcout << out;
-		tcout.flush();
+		if (consoleOutput)
+		{
+			tcout << out;
+			tcout.flush();
+		}
 		*logstream << out;
 		logstream->flush();
 		return *this;
@@ -37,6 +41,7 @@ public:
 private:
 	std::wofstream *logstream;
 	HANDLE hLogFile;
+	bool consoleOutput;
 
 };
 

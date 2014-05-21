@@ -17,6 +17,7 @@ const UserArgs::ArgSwitch UserArgs::rgArgSwitches[_COUNTOFACCEPTEDSWITCHES] =
 	{_T("FixItems"), _T("Fix Items"), false, FIXITEMS},
 	{_T("RemoveItemProperties"), _T("Remove Item Properties"), false, REMOVEITEMPROPERTIES },
 	{_T("PropertyList"), _T("Property List"), true, PROPLIST },
+	{_T("ExportFolderProperties"), _T("Export Folder Properties"), false, EXPORTFOLDERPROPERTIES },
 	{_T("Scope"), _T("Action Scope"), true, SCOPE},
 	{_T("Mailbox"), _T("Mailbox"), true, MAILBOX},
 	{_T("?"), _T("Help"), false, DISPLAYHELP},
@@ -369,6 +370,16 @@ bool UserArgs::Parse(int argc, TCHAR* argv[])
 		}
 
 		if (fRemoveFolderPermission() && !m_pstrUser)
+		{
+			retVal = 0;
+		}
+
+		if (fRemoveItemProperties() && !m_pstrProplist)
+		{
+			retVal = 0;
+		}
+
+		if (fExportFolderProperties() && !m_pstrProplist)
 		{
 			retVal = 0;
 		}
