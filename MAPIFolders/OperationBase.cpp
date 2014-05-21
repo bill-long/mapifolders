@@ -395,7 +395,7 @@ LPMAPIFOLDER OperationBase::GetStartingFolder(IMAPISession *pSession, tstring *c
 			userSpecifiedPath = *this->strBasePath;
 
 		splitPath = Split(userSpecifiedPath, (_T('\\')));
-		startIndex = 0;
+		startIndex = 1;
 	}
 	else
 	{
