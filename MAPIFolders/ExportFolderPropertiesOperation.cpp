@@ -100,8 +100,40 @@ void ExportFolderPropertiesOperation::ProcessFolder(LPMAPIFOLDER folder, tstring
 			}
 			else
 			{
-				*exportFile << std::hex << thisProp.Value.li.QuadPart;
+				*exportFile << thisProp.Value.li.QuadPart;
 			}
+		}
+		else if (PROP_TYPE(thisProp.ulPropTag) == PT_LONG)
+		{
+			*exportFile << thisProp.Value.l;
+		}
+		else if (PROP_TYPE(thisProp.ulPropTag) == PT_BOOLEAN)
+		{
+			if (thisProp.Value.b)
+			{
+				*exportFile << "True";
+			}
+			else
+			{
+				*exportFile << "False";
+			}
+		}
+		else if (PROP_TYPE(thisProp.ulPropTag) == PT_BINARY)
+		{
+			for (ULONG i = 0; i < thisProp.Value.bin.cb; i++)
+			{
+				BYTE oneByte = thisProp.Value.bin.lpb[i];
+				if (oneByte < 0x10)
+				{
+					*exportFile << _T("0");
+				}
+
+				*exportFile << std::hex << oneByte;
+			}
+		}
+		else
+		{
+			*exportFile << _T("MAPIFolders cannot export this property type");
 		}
 
 		if (y + 1 < cCount)
