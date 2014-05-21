@@ -42,10 +42,13 @@
     <ClInclude Include="Log.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ItemPropertiesOperation.h">
+    <ClInclude Include="CheckItemsOperation.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="CheckItemsOperation.h">
+    <ClInclude Include="ItemOperationBase.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RemoveItemPropertiesOperation.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -77,10 +80,13 @@
     <ClCompile Include="Log.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ItemPropertiesOperation.cpp">
+    <ClCompile Include="CheckItemsOperation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CheckItemsOperation.cpp">
+    <ClCompile Include="ItemOperationBase.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RemoveItemPropertiesOperation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

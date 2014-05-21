@@ -157,7 +157,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="CheckItemsOperation.h" />
-    <ClInclude Include="ItemPropertiesOperation.h" />
+    <ClInclude Include="ItemOperationBase.h" />
+    <ClInclude Include="RemoveItemPropertiesOperation.h" />
     <ClInclude Include="Log.h" />
     <ClInclude Include="MAPIFolders.h" />
     <ClInclude Include="ModifyFolderPermissions.h" />
@@ -170,7 +171,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CheckItemsOperation.cpp" />
-    <ClCompile Include="ItemPropertiesOperation.cpp" />
+    <ClCompile Include="ItemOperationBase.cpp" />
+    <ClCompile Include="RemoveItemPropertiesOperation.cpp" />
     <ClCompile Include="Log.cpp" />
     <ClCompile Include="MAPIFolders.cpp" />
     <ClCompile Include="MapiStubLibrary.cpp" />

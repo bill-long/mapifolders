@@ -95,7 +95,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 			if (ua.fRemoveItemProperties())
 			{
-				ItemPropertiesOperation *itemsOp = new ItemPropertiesOperation(ua.pstrFolderPath(), ua.pstrMailbox(), ua.nScope(), pLog, ua.pstrProplist());
+				RemoveItemPropertiesOperation *itemsOp = new RemoveItemPropertiesOperation(ua.pstrFolderPath(), ua.pstrMailbox(), ua.nScope(), pLog, ua.pstrProplist());
 				CORg(itemsOp->Initialize());
 				OperationBase *op = itemsOp;
 				op->DoOperation();

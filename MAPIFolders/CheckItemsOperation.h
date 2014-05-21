@@ -1,13 +1,13 @@
 #pragma once
-#include "OperationBase.h"
+#include "ItemOperationBase.h"
 class CheckItemsOperation :
-	public OperationBase
+	public ItemOperationBase
 {
 public:
 	CheckItemsOperation(tstring *pstrBasePath, tstring *pstrMailbox, UserArgs::ActionScope nScope, Log *log, bool fix);
 	~CheckItemsOperation();
 	HRESULT Initialize();
-	void ProcessFolder(LPMAPIFOLDER folder, tstring folderPath);
+	void ProcessItem(LPMAPIPROP item, LPCTSTR itemSubject);
 
 private:
 	bool fix;
