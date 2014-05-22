@@ -71,8 +71,10 @@ HRESULT ModifyFolderPermissions::Initialize(void)
 			this->rights = ROLE_REVIEWER;
 		else if (_tcsicmp(this->pstrRightsString->c_str(), _T("Contributor")) == 0)
 			this->rights = ROLE_CONTRIBUTOR;
-		else if (_tcsicmp(this->pstrRightsString->c_str(), _T("None")) == 0)
+		else if (_tcsicmp(this->pstrRightsString->c_str(), _T("FolderVisible")) == 0)
 			this->rights = ROLE_NONE;
+		else if (_tcsicmp(this->pstrRightsString->c_str(), _T("None")) == 0)
+			this->rights = RIGHTS_NONE;
 		else if (_tcsicmp(this->pstrRightsString->c_str(), _T("All")) == 0)
 			this->rights = ROLE_OWNER | RIGHTS_FOLDER_CONTACT;
 	}
@@ -113,7 +115,10 @@ void ModifyFolderPermissions::ProcessFolder(LPMAPIFOLDER folder, tstring folderP
 		}
 		else if (pRows->aRow[x].lpProps[ePR_MEMBER_ENTRYID].Value.bin.cb > 0)
 		{
-			if (IsEntryIdEqual(*resolvedUserEID, pRows->aRow[x].lpProps[ePR_MEMBER_ENTRYID].Value.bin))
+			ULONG result = 0;
+			SBinary thisEid = pRows->aRow[x].lpProps[ePR_MEMBER_ENTRYID].Value.bin;
+			CORg(this->lpSession->CompareEntryIDs(resolvedUserEID->cb, (LPENTRYID)resolvedUserEID->lpb, thisEid.cb, (LPENTRYID)thisEid.lpb, NULL, &result));
+			if (result)
 			{
 				found = true;
 			}
@@ -131,8 +136,8 @@ void ModifyFolderPermissions::ProcessFolder(LPMAPIFOLDER folder, tstring folderP
 		{
 			SPropValue   prop[1] = {0};
 			prop[0].ulPropTag  = PR_MEMBER_ID;
-			prop[0].Value.bin.cb = pRows -> aRow[x].lpProps[ePR_MEMBER_ID].Value.bin.cb;
-			prop[0].Value.bin.lpb = (BYTE*)pRows -> aRow[x].lpProps[ePR_MEMBER_ID].Value.bin.lpb;
+			prop[0].Value.cur.Lo = pRows->aRow[x].lpProps[ePR_MEMBER_ID].Value.cur.Lo;
+			prop[0].Value.cur.Hi = pRows->aRow[x].lpProps[ePR_MEMBER_ID].Value.cur.Hi;
 			rowList.cEntries    = 1;
 			rowList.aEntries->ulRowFlags = ROW_REMOVE;
 			rowList.aEntries->cValues  = 1;
@@ -144,8 +149,8 @@ void ModifyFolderPermissions::ProcessFolder(LPMAPIFOLDER folder, tstring folderP
 		{
 			SPropValue   prop[2] = {0};
 			prop[0].ulPropTag  = PR_MEMBER_ID;
-			prop[0].Value.bin.cb = pRows -> aRow[x].lpProps[ePR_MEMBER_ID].Value.bin.cb;
-			prop[0].Value.bin.lpb = (BYTE*)pRows -> aRow[x].lpProps[ePR_MEMBER_ID].Value.bin.lpb;
+			prop[0].Value.cur.Lo = pRows->aRow[x].lpProps[ePR_MEMBER_ID].Value.cur.Lo;
+			prop[0].Value.cur.Hi = pRows->aRow[x].lpProps[ePR_MEMBER_ID].Value.cur.Hi;
 			prop[1].ulPropTag  = PR_MEMBER_RIGHTS;
 			prop[1].Value.l   = rights;
 
@@ -199,19 +204,19 @@ void ModifyFolderPermissions::ProcessFolder(LPMAPIFOLDER folder, tstring folderP
 			}
 			else
 			{
-			SPropValue   prop[2] = {0};
-			prop[0].ulPropTag  = PR_MEMBER_ENTRYID;
-			prop[0].Value.bin.cb = resolvedUserEID->cb;
-			prop[0].Value.bin.lpb = resolvedUserEID->lpb;
-			prop[1].ulPropTag  = PR_MEMBER_RIGHTS;
-			prop[1].Value.l   = rights;
+				SPropValue   prop[2] = {0};
+				prop[0].ulPropTag  = PR_MEMBER_ENTRYID;
+				prop[0].Value.bin.cb = resolvedUserEID->cb;
+				prop[0].Value.bin.lpb = resolvedUserEID->lpb;
+				prop[1].ulPropTag  = PR_MEMBER_RIGHTS;
+				prop[1].Value.l   = rights;
 
-			rowList.cEntries = 1;
-			rowList.aEntries->ulRowFlags = ROW_ADD;
-			rowList.aEntries->cValues  = 2;
-			rowList.aEntries->rgPropVals = &prop[0]; 
+				rowList.cEntries = 1;
+				rowList.aEntries->ulRowFlags = ROW_ADD;
+				rowList.aEntries->cValues  = 2;
+				rowList.aEntries->rgPropVals = &prop[0]; 
 
-			CORg(lpExchModTbl->ModifyTable(0, &rowList));
+				CORg(lpExchModTbl->ModifyTable(0, &rowList));
 			}
 		}
 	}

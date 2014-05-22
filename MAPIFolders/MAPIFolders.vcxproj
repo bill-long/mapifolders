@@ -157,6 +157,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="CheckItemsOperation.h" />
+    <ClInclude Include="ExportFolderPermissionsOperation.h" />
     <ClInclude Include="ExportFolderPropertiesOperation.h" />
     <ClInclude Include="ItemOperationBase.h" />
     <ClInclude Include="RemoveItemPropertiesOperation.h" />
@@ -172,6 +173,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CheckItemsOperation.cpp" />
+    <ClCompile Include="ExportFolderPermissionsOperation.cpp" />
     <ClCompile Include="ExportFolderPropertiesOperation.cpp" />
     <ClCompile Include="ItemOperationBase.cpp" />
     <ClCompile Include="RemoveItemPropertiesOperation.cpp" />

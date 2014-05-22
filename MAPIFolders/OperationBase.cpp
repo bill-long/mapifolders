@@ -10,6 +10,7 @@ OperationBase::OperationBase(tstring *pstrBasePath, tstring *pstrMailbox, UserAr
 	this->strMailbox = pstrMailbox;
 	this->nScope = nScope;
 	this->pLog = log;
+	this->lpAdrBook = NULL;
 }
 
 OperationBase::~OperationBase(void)
@@ -107,7 +108,6 @@ LPMAPIFOLDER OperationBase::GetMailboxRoot(IMAPISession *pSession)
 	HRESULT hr = S_OK;
 	SBinary mailboxEID = {0};
 	LPMAPIFOLDER lpRoot = NULL;
-	LPADRBOOK lpAdrBook = NULL;
 	LPADRLIST lpAdrList = NULL;
 	LPMDB lpDefaultMDB = NULL;
 	LPEXCHANGEMANAGESTORE lpXManageStore = NULL;
@@ -230,8 +230,6 @@ LPMAPIFOLDER OperationBase::GetMailboxRoot(IMAPISession *pSession)
 Cleanup:
 	if (lpAdrList)
 		FreePadrlist(lpAdrList);
-	if (lpAdrBook)
-		lpAdrBook->Release();
 	return lpRoot;
 Error:
 	goto Cleanup;
@@ -823,14 +821,6 @@ std::vector<tstring> &OperationBase::Split(const tstring &s, TCHAR delim, std::v
         elems.push_back(item);
     }
     return elems;
-}
-
-bool OperationBase::IsEntryIdEqual(SBinary a, SBinary b)
-{
-	if (a.cb != b.cb)
-		return false;
-
-	return (!memcmp(a.lpb, b.lpb, a.cb));
 }
 
 // From MFCMapi MAPIFunctions.cpp

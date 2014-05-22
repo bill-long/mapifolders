@@ -5,7 +5,7 @@
 struct SavedACEInfo
 {
 	SBinary entryID;
-	SBinary memberID;
+	CURRENCY memberID;
 	long accessRights;
 };
 
@@ -365,10 +365,17 @@ void ValidateFolderACL::FixACL(LPMAPIFOLDER folder)
 			bool found = false;
 			for (y = 0; y < savedACECount; y++)
 			{
-				if (IsEntryIdEqual(savedACEs[y].entryID, pRowsBefore->aRow[x].lpProps[ePR_MEMBER_ENTRYID].Value.bin))
+				ULONG result = 0;
+				CORg(this->lpSession->CompareEntryIDs(
+					savedACEs[y].entryID.cb,
+					(LPENTRYID) savedACEs[y].entryID.lpb,
+					pRowsBefore->aRow[x].lpProps[ePR_MEMBER_ENTRYID].Value.bin.cb,
+					(LPENTRYID) pRowsBefore->aRow[x].lpProps[ePR_MEMBER_ENTRYID].Value.bin.lpb,
+					NULL, &result));
+
+				if (result)
 				{
 					found = true;
-					break;
 				}
 			}
 
@@ -377,8 +384,8 @@ void ValidateFolderACL::FixACL(LPMAPIFOLDER folder)
 			{
 				savedACEs[savedACECount].entryID.cb = pRowsBefore->aRow[x].lpProps[ePR_MEMBER_ENTRYID].Value.bin.cb;
 				savedACEs[savedACECount].entryID.lpb = pRowsBefore->aRow[x].lpProps[ePR_MEMBER_ENTRYID].Value.bin.lpb;
-				savedACEs[savedACECount].memberID.cb = pRowsBefore->aRow[x].lpProps[ePR_MEMBER_ID].Value.bin.cb;
-				savedACEs[savedACECount].memberID.lpb = pRowsBefore->aRow[x].lpProps[ePR_MEMBER_ID].Value.bin.lpb;
+				savedACEs[savedACECount].memberID.Lo = pRowsBefore->aRow[x].lpProps[ePR_MEMBER_ID].Value.cur.Lo;
+				savedACEs[savedACECount].memberID.Hi = pRowsBefore->aRow[x].lpProps[ePR_MEMBER_ID].Value.cur.Hi;
 				savedACEs[savedACECount].accessRights = pRowsBefore->aRow[x].lpProps[ePR_MEMBER_RIGHTS].Value.l;
 				savedACECount++;
 
@@ -398,7 +405,15 @@ void ValidateFolderACL::FixACL(LPMAPIFOLDER folder)
 		UINT acesToRemove = 0;
 		for (y = 0; y < pRowsBefore->cRows; y++)
 		{
-			if (IsEntryIdEqual(savedACEs[x].entryID, pRowsBefore->aRow[y].lpProps[ePR_MEMBER_ENTRYID].Value.bin))
+			ULONG result = 0;
+			CORg(this->lpSession->CompareEntryIDs(
+				savedACEs[x].entryID.cb,
+				(LPENTRYID)savedACEs[x].entryID.lpb,
+				pRowsBefore->aRow[y].lpProps[ePR_MEMBER_ENTRYID].Value.bin.cb,
+				(LPENTRYID)pRowsBefore->aRow[y].lpProps[ePR_MEMBER_ENTRYID].Value.bin.lpb,
+				NULL, &result));
+			
+			if (result)
 			{
 				acesToRemove++;
 			}
@@ -410,8 +425,8 @@ void ValidateFolderACL::FixACL(LPMAPIFOLDER folder)
 			ROWLIST rowListRemove = {0};
 
 			propRemove[0].ulPropTag = PR_MEMBER_ID;
-			propRemove[0].Value.bin.cb = savedACEs[x].memberID.cb;
-			propRemove[0].Value.bin.lpb = savedACEs[x].memberID.lpb;
+			propRemove[0].Value.cur.Lo = savedACEs[x].memberID.Lo;
+			propRemove[0].Value.cur.Hi = savedACEs[x].memberID.Hi;
 
 			rowListRemove.cEntries = 1;
 			rowListRemove.aEntries->ulRowFlags = ROW_REMOVE;
@@ -419,7 +434,7 @@ void ValidateFolderACL::FixACL(LPMAPIFOLDER folder)
 			rowListRemove.aEntries->rgPropVals = &propRemove[0];
 			
 #ifdef DEBUG
-			*pLog << "    Removing member ID: " << savedACEs[x].memberID.cb << "\n";
+			*pLog << "    Removing member ID: " << savedACEs[x].memberID.Lo << ":" << savedACEs[x].memberID.Hi << "\n";
 #endif
 			CORg(lpExchModTbl->ModifyTable(0, &rowListRemove));
 		}
@@ -465,7 +480,7 @@ void ValidateFolderACL::FixACL(LPMAPIFOLDER folder)
 		prop[0].Value.cur.Lo = 0xFFFFFFFF;
 		prop[0].Value.cur.Hi = 0xFFFFFFFF;
 		prop[1].ulPropTag = PR_MEMBER_RIGHTS;
-		prop[1].Value.l = ROLE_NONE;
+		prop[1].Value.l = RIGHTS_NONE;
 
 		ROWLIST rowList = {0};
 		rowList.cEntries = 1;

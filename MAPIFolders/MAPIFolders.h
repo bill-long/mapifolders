@@ -23,6 +23,7 @@
 #include "RemoveItemPropertiesOperation.h"
 #include "CheckItemsOperation.h"
 #include "ExportFolderPropertiesOperation.h"
+#include "ExportFolderPermissionsOperation.h"
 #include "Log.h"
 
 enum {
