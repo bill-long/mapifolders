@@ -33,7 +33,6 @@ public:
 	virtual void ProcessFolder(LPMAPIFOLDER folder, tstring folderPath);
 	std::string GetStringFromFolderPath(LPMAPIFOLDER folder);
 	HRESULT OperationBase::CopySBinary(_Out_ LPSBinary psbDest, _In_ const LPSBinary psbSrc, _In_ LPVOID lpParent);
-	bool OperationBase::IsEntryIdEqual(SBinary a, SBinary b);
 	LPSBinary OperationBase::ResolveNameToEID(tstring *pstrName);
 	void OperationBase::OutputSBinary(SBinary lpsbin);
 	HRESULT OperationBase::HrAllocAdrList(ULONG ulNumProps, _Deref_out_opt_ LPADRLIST* lpAdrList);
@@ -41,6 +40,7 @@ public:
 	std::vector<tstring> &Split(const tstring &s, TCHAR delim, std::vector<tstring> &elems);
 	LPMAPISESSION lpSession;
 	Log *pLog;
+	LPADRBOOK lpAdrBook;
 
 protected:
 	LPMAPIFOLDER GetPFRoot(IMAPISession *pSession);
@@ -74,4 +74,3 @@ protected:
 	tstring *strMailbox;
 	UserArgs::ActionScope nScope;
 };
-

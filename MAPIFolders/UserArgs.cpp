@@ -18,6 +18,7 @@ const UserArgs::ArgSwitch UserArgs::rgArgSwitches[_COUNTOFACCEPTEDSWITCHES] =
 	{_T("RemoveItemProperties"), _T("Remove Item Properties"), false, REMOVEITEMPROPERTIES },
 	{_T("PropertyList"), _T("Property List"), true, PROPLIST },
 	{_T("ExportFolderProperties"), _T("Export Folder Properties"), false, EXPORTFOLDERPROPERTIES },
+	{_T("ExportFolderPermissions"), _T("Export Folder Permissions"), false, EXPORTFOLDERPERMISSIONS },
 	{_T("Scope"), _T("Action Scope"), true, SCOPE},
 	{_T("Mailbox"), _T("Mailbox"), true, MAILBOX},
 	{_T("?"), _T("Help"), false, DISPLAYHELP},
