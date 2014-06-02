@@ -376,6 +376,7 @@ LPMAPIFOLDER OperationBase::GetStartingFolder(IMAPISession *pSession, tstring *c
 
 	if (this->strMailbox != NULL)
 	{
+		calculatedFolderPath->append(this->strMailbox->c_str());
 		lpTopFolder = lpRootFolder;
 		if (this->strBasePath == NULL)
 		{
