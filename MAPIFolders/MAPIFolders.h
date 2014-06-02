@@ -24,6 +24,7 @@
 #include "CheckItemsOperation.h"
 #include "ExportFolderPropertiesOperation.h"
 #include "ExportFolderPermissionsOperation.h"
+#include "ExportSearchFoldersOperation.h"
 #include "Log.h"
 
 enum {

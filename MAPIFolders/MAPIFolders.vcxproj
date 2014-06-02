@@ -159,6 +159,7 @@
     <ClInclude Include="CheckItemsOperation.h" />
     <ClInclude Include="ExportFolderPermissionsOperation.h" />
     <ClInclude Include="ExportFolderPropertiesOperation.h" />
+    <ClInclude Include="ExportSearchFoldersOperation.h" />
     <ClInclude Include="ItemOperationBase.h" />
     <ClInclude Include="RemoveItemPropertiesOperation.h" />
     <ClInclude Include="Log.h" />
@@ -175,6 +176,7 @@
     <ClCompile Include="CheckItemsOperation.cpp" />
     <ClCompile Include="ExportFolderPermissionsOperation.cpp" />
     <ClCompile Include="ExportFolderPropertiesOperation.cpp" />
+    <ClCompile Include="ExportSearchFoldersOperation.cpp" />
     <ClCompile Include="ItemOperationBase.cpp" />
     <ClCompile Include="RemoveItemPropertiesOperation.cpp" />
     <ClCompile Include="Log.cpp" />

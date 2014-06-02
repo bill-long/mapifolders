@@ -146,6 +146,24 @@ int _tmain(int argc, _TCHAR* argv[])
 				op->DoOperation();
 			}
 
+			if (ua.fExportSearchFolders())
+			{
+				Log *exportFile = new Log(NULL, false);
+				tstring *exportFileName = new tstring(_T("ExportSearchFolders"));
+				exportFileName->append(pLog->pstrTimeString->c_str());
+				exportFileName->append(_T(".txt"));
+				CORg(exportFile->Initialize(exportFileName));
+				ExportSearchFoldersOperation *exportSearchFoldersOp = new ExportSearchFoldersOperation(
+					ua.pstrFolderPath(),
+					ua.pstrMailbox(),
+					ua.nScope(),
+					pLog,
+					exportFile);
+				CORg(exportSearchFoldersOp->Initialize());
+				OperationBase *op = exportSearchFoldersOp;
+				op->DoOperation();
+			}
+
 			delete lpTimeStr;
 			lpTimeStr = NULL;
 			cchTime = GetTimeFormat(LOCALE_SYSTEM_DEFAULT, 0, NULL, NULL, NULL, 0);

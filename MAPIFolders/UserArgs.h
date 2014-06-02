@@ -3,7 +3,7 @@
 #include <iostream>
 #include <tchar.h>
 
-#define _COUNTOFACCEPTEDSWITCHES (15)
+#define _COUNTOFACCEPTEDSWITCHES (16)
 #define _COUNTOFSCOPES (3)
 
 typedef std::basic_string<TCHAR> tstring;
@@ -27,6 +27,7 @@ public:
 	bool fRemoveItemProperties() { return (NULL != (m_actions & REMOVEITEMPROPERTIES)); }
 	bool fExportFolderProperties() { return (NULL != (m_actions & EXPORTFOLDERPROPERTIES)); }
 	bool fExportFolderPermissions() { return (NULL != (m_actions & EXPORTFOLDERPERMISSIONS)); }
+	bool fExportSearchFolders() { return (NULL != (m_actions & EXPORTSEARCHFOLDERS)); }
 	bool fDisplayHelp() {return (NULL!=(m_actions & DISPLAYHELP));}
 
 	// Argument value accessor methods
@@ -106,6 +107,7 @@ private:
 	static const unsigned long PROPLIST = 1 << 11; // Not an action
 	static const unsigned long EXPORTFOLDERPROPERTIES = 1 << 12;
 	static const unsigned long EXPORTFOLDERPERMISSIONS = 1 << 13;
+	static const unsigned long EXPORTSEARCHFOLDERS = 1 << 14;
 	static const unsigned long DISPLAYHELP=1<<31;	// User requested help in a valid syntax
 
 	// Error codes
