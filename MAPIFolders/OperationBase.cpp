@@ -95,12 +95,11 @@ void OperationBase::DoOperation()
 	TraverseFolders(lpSession, lpStartingFolder, startingPath);
 
 	// Now we can release stuff
-	if (lpRootFolder)
-		lpRootFolder->Release();
-	if (lpAdminMDB)
-		lpAdminMDB->Release();
-	if (lpSession)
-		lpSession->Release();
+	if (this->lpStartingFolder) lpStartingFolder->Release();
+	if (this->lpRootFolder) lpRootFolder->Release();
+	if (this->lpAdrBook) lpAdrBook->Release();
+	if (this->lpAdminMDB) lpAdminMDB->Release();
+	if (this->lpSession) lpSession->Release();
 }
 
 LPMAPIFOLDER OperationBase::GetMailboxRoot(IMAPISession *pSession)
