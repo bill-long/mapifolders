@@ -83,7 +83,7 @@ HRESULT Log::Initialize(tstring *filename)
 	this->pstrLogFilePath = new tstring(pstrLogFolderPath->c_str());
 	this->pstrLogFilePath->append(filename->c_str());
 
-	hLogFile = CreateFile(this->pstrLogFilePath->c_str(), GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+	hLogFile = CreateFile(this->pstrLogFilePath->c_str(), GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (hLogFile == INVALID_HANDLE_VALUE)
 	{
 		DWORD lastError = GetLastError();

@@ -58,8 +58,8 @@ HRESULT OperationBase::Initialize(void)
 
 	CORg(MAPIInitialize (&MAPIINIT));
 
-	CORg(MAPILogonEx(0, NULL, NULL, MAPI_LOGON_UI | MAPI_EXTENDED | MAPI_ALLOW_OTHERS | MAPI_LOGON_UI | MAPI_EXPLICIT_PROFILE, &lpSession));
-		
+	CORg(MAPILogonEx(0, NULL, NULL, MAPI_NO_MAIL | MAPI_UNICODE | MAPI_EXTENDED | MAPI_ALLOW_OTHERS | MAPI_NEW_SESSION | MAPI_USE_DEFAULT, &lpSession));
+	
 	if (strMailbox != NULL)
 	{
 		lpRootFolder = GetMailboxRoot(lpSession);
@@ -99,7 +99,11 @@ void OperationBase::DoOperation()
 	if (this->lpRootFolder) lpRootFolder->Release();
 	if (this->lpAdrBook) lpAdrBook->Release();
 	if (this->lpAdminMDB) lpAdminMDB->Release();
-	if (this->lpSession) lpSession->Release();
+	if (this->lpSession)
+	{
+		lpSession->Logoff(NULL, NULL, 0);
+		lpSession->Release();
+	}
 }
 
 LPMAPIFOLDER OperationBase::GetMailboxRoot(IMAPISession *pSession)
