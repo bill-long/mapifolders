@@ -133,7 +133,6 @@ int _tmain(int argc, _TCHAR* argv[])
 				Log *exportFile = new Log(NULL, false);
 				tstring *exportFileName = new tstring(_T("ExportFolderPermissions"));
 				exportFileName->append(pLog->pstrTimeString->c_str());
-				exportFileName->append(_T(".txt"));
 				CORg(exportFile->Initialize(exportFileName));
 				ExportFolderPermissionsOperation *exportFoldersOp = new ExportFolderPermissionsOperation(
 					ua.pstrFolderPath(),
@@ -151,7 +150,6 @@ int _tmain(int argc, _TCHAR* argv[])
 				Log *exportFile = new Log(NULL, false);
 				tstring *exportFileName = new tstring(_T("ExportSearchFolders"));
 				exportFileName->append(pLog->pstrTimeString->c_str());
-				exportFileName->append(_T(".txt"));
 				CORg(exportFile->Initialize(exportFileName));
 				ExportSearchFoldersOperation *exportSearchFoldersOp = new ExportSearchFoldersOperation(
 					ua.pstrFolderPath(),

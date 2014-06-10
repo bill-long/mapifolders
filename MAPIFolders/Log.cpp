@@ -1,4 +1,5 @@
 #include "Log.h"
+#include <sstream>
 
 #define CORg(_hr) \
 	do { \
@@ -82,14 +83,46 @@ HRESULT Log::Initialize(tstring *filename)
 
 	this->pstrLogFilePath = new tstring(pstrLogFolderPath->c_str());
 	this->pstrLogFilePath->append(filename->c_str());
+	this->pstrLogFilePath->append(_T(".txt"));
 
-	hLogFile = CreateFile(this->pstrLogFilePath->c_str(), GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	hLogFile = CreateFile(this->pstrLogFilePath->c_str(), GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (hLogFile == INVALID_HANDLE_VALUE)
 	{
 		DWORD lastError = GetLastError();
-		tcout << "Error creating log file: " << lastError;
-		hr = HRESULT_FROM_WIN32(lastError);
-		goto Error;
+		if (lastError == 80)
+		{
+			int increment = 1;
+			while (lastError == 80)
+			{
+				std::wstringstream wss;
+				wss << increment;
+				delete this->pstrLogFilePath;
+				this->pstrLogFilePath = NULL;
+				this->pstrLogFilePath = new tstring(pstrLogFolderPath->c_str());
+				this->pstrLogFilePath->append(filename->c_str());
+				this->pstrLogFilePath->append(_T("-"));
+				this->pstrLogFilePath->append(wss.str());
+				this->pstrLogFilePath->append(_T(".txt"));
+				hLogFile = CreateFile(this->pstrLogFilePath->c_str(), GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+				if (hLogFile == INVALID_HANDLE_VALUE)
+				{
+					lastError = GetLastError();
+				}
+				else
+				{
+					lastError = 0;
+				}
+
+				increment += 1;
+			}
+		}
+
+		if (hLogFile == INVALID_HANDLE_VALUE)
+		{
+			tcout << "Error creating log file: " << lastError << "\n";
+			hr = HRESULT_FROM_WIN32(lastError);
+			goto Error;
+		}
 	}
 
 	// If we're here, then we have a handle to a uniquely named log file. Yay!
@@ -112,7 +145,6 @@ HRESULT Log::Initialize(void)
 
 	tstring *logFilePath = new tstring(_T("MAPIFoldersLog"));
 	logFilePath->append(this->pstrTimeString->c_str());
-	logFilePath->append(_T(".txt"));
 
 	CORg(this->Initialize(logFilePath));
 

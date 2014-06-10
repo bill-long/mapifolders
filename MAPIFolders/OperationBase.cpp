@@ -11,6 +11,8 @@ OperationBase::OperationBase(tstring *pstrBasePath, tstring *pstrMailbox, UserAr
 	this->nScope = nScope;
 	this->pLog = log;
 	this->lpAdrBook = NULL;
+	this->lpRootFolder = NULL;
+	this->lpStartingFolder = NULL;
 }
 
 OperationBase::~OperationBase(void)
@@ -54,7 +56,7 @@ HRESULT OperationBase::Initialize(void)
 	lpSession = NULL;
 	startingPath = tstring(_T(""));
 
-	MAPIINIT_0  MAPIINIT= { 0, MAPI_MULTITHREAD_NOTIFICATIONS};
+	MAPIINIT_0  MAPIINIT= { 0, 0 };
 
 	CORg(MAPIInitialize (&MAPIINIT));
 
@@ -92,11 +94,25 @@ Error:
 
 void OperationBase::DoOperation()
 {
+	HRESULT hr = S_OK;
 	TraverseFolders(lpSession, lpStartingFolder, startingPath);
 
 	// Now we can release stuff
+	ULONG startingFolderIsRoot = 0;
+	LPSPropValue startingFolderProp = NULL;
+	CORg(HrGetOneProp(lpAdminMDB, PR_ENTRYID, &startingFolderProp));
+	LPSPropValue rootFolderProp = NULL;
+	CORg(HrGetOneProp(lpAdminMDB, PR_ENTRYID, &rootFolderProp));
+	CORg(this->lpSession->CompareEntryIDs(
+		startingFolderProp->Value.bin.cb,
+		(LPENTRYID)startingFolderProp->Value.bin.lpb,
+		rootFolderProp->Value.bin.cb,
+		(LPENTRYID)rootFolderProp->Value.bin.lpb,
+		NULL, &startingFolderIsRoot));
+Error:
 	if (this->lpStartingFolder) lpStartingFolder->Release();
-	if (this->lpRootFolder) lpRootFolder->Release();
+	// if root folder is the starting folder, then we already released it
+	if (!startingFolderIsRoot && this->lpRootFolder) lpRootFolder->Release();
 	if (this->lpAdrBook) lpAdrBook->Release();
 	if (this->lpAdminMDB) lpAdminMDB->Release();
 	if (this->lpSession)
