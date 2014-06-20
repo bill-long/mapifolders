@@ -300,6 +300,23 @@ HRESULT ValidateFolderACL::CheckACLTable(LPMAPIFOLDER folder, bool &aclTableIsGo
 				aclTableIsGood = false;
 				break;
 			}
+
+			if (pRows->aRow[x].lpProps[ePR_MEMBER_ENTRYID].Value.bin.cb > 0)
+			{
+				ULONG result = 0;
+				lpSession->CompareEntryIDs(
+					pRows->aRow[x].lpProps[ePR_MEMBER_ENTRYID].Value.bin.cb,
+					(LPENTRYID)pRows->aRow[x].lpProps[ePR_MEMBER_ENTRYID].Value.bin.lpb,
+					pRows->aRow[y].lpProps[ePR_MEMBER_ENTRYID].Value.bin.cb,
+					(LPENTRYID)pRows->aRow[y].lpProps[ePR_MEMBER_ENTRYID].Value.bin.lpb, NULL, &result);
+
+				if (result > 0)
+				{
+					*pLog << "     ACL table has duplicate security principals." << "\n";
+					aclTableIsGood = false;
+					break;
+				}
+			}
 		}
 
 		if (!aclTableIsGood)
