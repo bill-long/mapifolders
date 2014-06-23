@@ -301,7 +301,7 @@ HRESULT ValidateFolderACL::CheckACLTable(LPMAPIFOLDER folder, bool &aclTableIsGo
 				break;
 			}
 
-			if (pRows->aRow[x].lpProps[ePR_MEMBER_ENTRYID].Value.bin.cb > 0)
+			if (pRows->aRow[x].lpProps[ePR_MEMBER_ENTRYID].Value.bin.cb > 0 && pRows->aRow[y].lpProps[ePR_MEMBER_ENTRYID].Value.bin.cb > 0)
 			{
 				ULONG result = 0;
 				lpSession->CompareEntryIDs(
