@@ -422,17 +422,20 @@ void ValidateFolderACL::FixACL(LPMAPIFOLDER folder)
 		UINT acesToRemove = 0;
 		for (y = 0; y < pRowsBefore->cRows; y++)
 		{
-			ULONG result = 0;
-			CORg(this->lpSession->CompareEntryIDs(
-				savedACEs[x].entryID.cb,
-				(LPENTRYID)savedACEs[x].entryID.lpb,
-				pRowsBefore->aRow[y].lpProps[ePR_MEMBER_ENTRYID].Value.bin.cb,
-				(LPENTRYID)pRowsBefore->aRow[y].lpProps[ePR_MEMBER_ENTRYID].Value.bin.lpb,
-				NULL, &result));
-			
-			if (result)
+			if (pRowsBefore->aRow[y].lpProps[ePR_MEMBER_ENTRYID].Value.bin.cb > 0)
 			{
-				acesToRemove++;
+				ULONG result = 0;
+				CORg(this->lpSession->CompareEntryIDs(
+					savedACEs[x].entryID.cb,
+					(LPENTRYID)savedACEs[x].entryID.lpb,
+					pRowsBefore->aRow[y].lpProps[ePR_MEMBER_ENTRYID].Value.bin.cb,
+					(LPENTRYID)pRowsBefore->aRow[y].lpProps[ePR_MEMBER_ENTRYID].Value.bin.lpb,
+					NULL, &result));
+
+				if (result)
+				{
+					acesToRemove++;
+				}
 			}
 		}
 
