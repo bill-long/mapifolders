@@ -178,7 +178,7 @@ void CheckItemsOperation::ProcessAttachmentsRecursive(LPMAPIPROP lpMAPIProp)
 
 			*pLog << "        Checking attachment: " << (pwzAttachName ? pwzAttachName : _T("<NULL>")) << "\n";
 
-			if (ulAttachMethod = ATTACH_EMBEDDED_MSG)
+			if (ulAttachMethod == ATTACH_EMBEDDED_MSG)
 			{
 				CORg(lpAttach->OpenProperty(PR_ATTACH_DATA_OBJ, (LPIID)&IID_IMessage, 0, MAPI_MODIFY, (LPUNKNOWN *)&lpEmbeddedMessage));
 
