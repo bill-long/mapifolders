@@ -8,9 +8,11 @@ public:
 	~CheckItemsOperation();
 	HRESULT Initialize();
 	void ProcessItem(LPMAPIPROP item, LPCTSTR itemSubject);
+	void CheckItemsOperation::ProcessAttachmentsRecursive(LPMAPIPROP lpMessage);
 
 private:
 	bool fix;
 	LPSPropTagArray lpPropsToRemove;
+	LPSPropTagArray lpAttachProps;
+	LPSPropTagArray lpAttachTableProps;
 };
-
