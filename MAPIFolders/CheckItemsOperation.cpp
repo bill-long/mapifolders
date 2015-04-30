@@ -123,13 +123,7 @@ void CheckItemsOperation::ProcessAttachmentsRecursive(LPMAPIPROP lpMAPIProp)
 	LPATTACH lpAttach = NULL;
 	LPMESSAGE lpEmbeddedMessage = NULL;
 
-	CORg(lpMAPIProp->OpenProperty(
-		PR_MESSAGE_ATTACHMENTS,
-		&IID_IMAPITable,
-		fMapiUnicode,
-		0,
-		(LPUNKNOWN *)&lpTable));
-
+	CORg(((LPMESSAGE)lpMAPIProp)->GetAttachmentTable(0, &lpTable));
 	CORg(lpTable->QueryColumns(0, &lpColSet));
 	CORg(lpTable->SeekRow(BOOKMARK_BEGINNING, 0, NULL));
 
@@ -188,7 +182,7 @@ void CheckItemsOperation::ProcessAttachmentsRecursive(LPMAPIPROP lpMAPIProp)
 				bool foundSomeProps = false;
 				for (ULONG y = 0; y < cCount; y++)
 				{
-					if ((rgprops[y].ulPropTag == *lpPropsToRemove[0].aulPropTag) || (rgprops[y].ulPropTag == *lpPropsToRemove[1].aulPropTag))
+					if ((rgprops[y].ulPropTag == lpPropsToRemove->aulPropTag[0]) || (rgprops[y].ulPropTag == lpPropsToRemove->aulPropTag[1]))
 					{
 						*pLog << "            Found property: " << std::hex << rgprops[y].ulPropTag << "\n";
 						foundSomeProps = true;
