@@ -532,7 +532,7 @@ HRESULT OperationBase::GetSubfolderByName(LPMAPIFOLDER parentFolder, tstring fol
 {
 	HRESULT hr = S_OK;
 	LPMAPITABLE hierarchyTable = NULL;
-	SRowSet *pmrows = NULL;
+	SRowSet *pRows = NULL;
 	ULONG ulObjType = NULL;
 	returnedFolderName->clear();
 
@@ -555,27 +555,36 @@ HRESULT OperationBase::GetSubfolderByName(LPMAPIFOLDER parentFolder, tstring fol
 	CORg(parentFolder->GetHierarchyTable(NULL, &hierarchyTable));
 	CORg(hierarchyTable->SetColumns((LPSPropTagArray)&mcols, TBL_BATCH));
 	CORg(hierarchyTable->SeekRow(BOOKMARK_BEGINNING, 0, 0));
-	CORg(hierarchyTable->QueryRows(10000, 0, &pmrows));
-	
-	for (UINT i=0; i != pmrows->cRows; i++)
+
+	if (!FAILED(hr)) for (;;)
 	{
-		SRow *prow = pmrows->aRow + i;
-		LPCWSTR pwz = NULL;
-		if (PR_DISPLAY_NAME_W == prow->lpProps[COL_DISPLAYNAME_W].ulPropTag)
+		hr = S_OK;
+		if (pRows) FreeProws(pRows);
+		pRows = NULL;
+
+		CORg(hierarchyTable->QueryRows(100, 0, &pRows));
+		if (FAILED(hr) || !pRows || !pRows->cRows) break;
+
+		for (UINT i = 0; i != pRows->cRows; i++)
 		{
-			pwz = prow->lpProps[COL_DISPLAYNAME_W].Value.lpszW;
-			if (_tstricmp(folderNameToFind.c_str(), pwz) == 0)
+			SRow *prow = pRows->aRow + i;
+			LPCWSTR pwz = NULL;
+			if (PR_DISPLAY_NAME_W == prow->lpProps[COL_DISPLAYNAME_W].ulPropTag)
 			{
-				CORg(this->lpAdminMDB->OpenEntry(prow->lpProps[COL_ENTRYID].Value.bin.cb, (LPENTRYID)prow->lpProps[COL_ENTRYID].Value.bin.lpb, NULL, MAPI_BEST_ACCESS, &ulObjType, (LPUNKNOWN *) returnedFolder));
-				returnedFolderName->append(pwz);
-				break;
+				pwz = prow->lpProps[COL_DISPLAYNAME_W].Value.lpszW;
+				if (_tstricmp(folderNameToFind.c_str(), pwz) == 0)
+				{
+					CORg(this->lpAdminMDB->OpenEntry(prow->lpProps[COL_ENTRYID].Value.bin.cb, (LPENTRYID)prow->lpProps[COL_ENTRYID].Value.bin.lpb, NULL, MAPI_BEST_ACCESS, &ulObjType, (LPUNKNOWN *)returnedFolder));
+					returnedFolderName->append(pwz);
+					break;
+				}
 			}
 		}
 	}
 
 Cleanup:
-	if (pmrows)
-		FreeProws(pmrows);
+	if (pRows)
+		FreeProws(pRows);
 	if (hierarchyTable)
 		hierarchyTable->Release();
 	// The caller should free the folders
@@ -637,77 +646,86 @@ RetryGetHierarchyTable:
 		CORg(hierarchyTable->SetColumns((LPSPropTagArray)&mcols, TBL_BATCH));
 		CORg(hierarchyTable->SeekRow(BOOKMARK_BEGINNING, 0, 0));
 	
+		if (!FAILED(hr)) for (;;)
+		{
+			hr = S_OK;
+			if (pmrows) FreeProws(pmrows);
+			pmrows = NULL;
+
 RetryQueryRows:
-		hr = hierarchyTable->QueryRows(10000, 0, &pmrows);
-		if (FAILED(hr))
-		{
-			if (hr == MAPI_E_TIMEOUT)
-			{
-				*pLog << "     Encountered a timeout in QueryRows. Retrying in 5 seconds..." << "\n";
-				pmrows = NULL;
-				Sleep(5000);
-				goto RetryQueryRows;
-			}
-			else if (hr == MAPI_E_NETWORK_ERROR)
-			{
-				*pLog << "     Encountered a network error in QueryRows. Retrying in 5 seconds..." << "\n";
-				pmrows = NULL;
-				Sleep(5000);
-				goto RetryQueryRows;
-			}
-			else
-			{
-				*pLog << "     QueryRows returned an error. hr = " << std::hex << hr << "\n";
-				goto Error;
-			}
-		}
-
-		for (UINT i=0; i != pmrows->cRows; i++)
-		{
-			SRow *prow = pmrows->aRow + i;
-			LPCWSTR pwz = NULL;
-			if (PR_DISPLAY_NAME == prow->lpProps[COL_DISPLAYNAME].ulPropTag)
-				pwz = prow->lpProps[COL_DISPLAYNAME].Value.LPSZ;
-
-			tstring thisPath(parentPath.c_str());
-			thisPath.append(_T("\\"));
-			thisPath.append(pwz);
-
-			ULONG ulObjType = NULL;
-			LPMAPIFOLDER lpSubfolder = NULL;
-
-RetryOpenEntry:
-			hr = lpAdminMDB->OpenEntry(prow->lpProps[COL_ENTRYID].Value.bin.cb, (LPENTRYID)prow->lpProps[COL_ENTRYID].Value.bin.lpb, NULL, MAPI_BEST_ACCESS, &ulObjType, (LPUNKNOWN *) &lpSubfolder);
+			hr = hierarchyTable->QueryRows(100, 0, &pmrows);
 			if (FAILED(hr))
 			{
 				if (hr == MAPI_E_TIMEOUT)
 				{
-					*pLog << "     Encountered a timeout in OpenEntry. Retrying in 5 seconds..." << "\n";
+					*pLog << "     Encountered a timeout in QueryRows. Retrying in 5 seconds..." << "\n";
+					pmrows = NULL;
 					Sleep(5000);
-					goto RetryOpenEntry;
+					goto RetryQueryRows;
 				}
 				else if (hr == MAPI_E_NETWORK_ERROR)
 				{
-					*pLog << "     Encountered a network error in OpenEntry. Retrying in 5 seconds..." << "\n";
+					*pLog << "     Encountered a network error in QueryRows. Retrying in 5 seconds..." << "\n";
+					pmrows = NULL;
 					Sleep(5000);
-					goto RetryOpenEntry;
+					goto RetryQueryRows;
 				}
 				else
 				{
-					*pLog << "     OpenEntry returned an error. hr = " << std::hex << hr << "\n";
+					*pLog << "     QueryRows returned an error. hr = " << std::hex << hr << "\n";
+					goto Error;
 				}
 			}
 
-			if (lpSubfolder)
-			{
-				this->ProcessFolder(lpSubfolder, thisPath);
+			if (!pmrows || !pmrows->cRows) break;
 
-				if (this->nScope == UserArgs::ActionScope::SUBTREE)
+			for (UINT i = 0; i != pmrows->cRows; i++)
+			{
+				SRow *prow = pmrows->aRow + i;
+				LPCWSTR pwz = NULL;
+				if (PR_DISPLAY_NAME == prow->lpProps[COL_DISPLAYNAME].ulPropTag)
+					pwz = prow->lpProps[COL_DISPLAYNAME].Value.LPSZ;
+
+				tstring thisPath(parentPath.c_str());
+				thisPath.append(_T("\\"));
+				thisPath.append(pwz);
+
+				ULONG ulObjType = NULL;
+				LPMAPIFOLDER lpSubfolder = NULL;
+
+RetryOpenEntry:
+				hr = lpAdminMDB->OpenEntry(prow->lpProps[COL_ENTRYID].Value.bin.cb, (LPENTRYID)prow->lpProps[COL_ENTRYID].Value.bin.lpb, NULL, MAPI_BEST_ACCESS, &ulObjType, (LPUNKNOWN *)&lpSubfolder);
+				if (FAILED(hr))
 				{
-					TraverseFolders(session, lpSubfolder, thisPath);
+					if (hr == MAPI_E_TIMEOUT)
+					{
+						*pLog << "     Encountered a timeout in OpenEntry. Retrying in 5 seconds..." << "\n";
+						Sleep(5000);
+						goto RetryOpenEntry;
+					}
+					else if (hr == MAPI_E_NETWORK_ERROR)
+					{
+						*pLog << "     Encountered a network error in OpenEntry. Retrying in 5 seconds..." << "\n";
+						Sleep(5000);
+						goto RetryOpenEntry;
+					}
+					else
+					{
+						*pLog << "     OpenEntry returned an error. hr = " << std::hex << hr << "\n";
+					}
 				}
 
-				lpSubfolder->Release();
+				if (lpSubfolder)
+				{
+					this->ProcessFolder(lpSubfolder, thisPath);
+
+					if (this->nScope == UserArgs::ActionScope::SUBTREE)
+					{
+						TraverseFolders(session, lpSubfolder, thisPath);
+					}
+
+					lpSubfolder->Release();
+				}
 			}
 		}
 	}
