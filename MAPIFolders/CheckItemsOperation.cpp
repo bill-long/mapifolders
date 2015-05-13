@@ -146,7 +146,7 @@ void CheckItemsOperation::ProcessAttachmentsRecursive(LPMAPIPROP lpMAPIProp)
 			ULONG ulAttachMethod = NULL;
 			ULONG ulAttachNum = NULL;
 
-			CORg(((LPMESSAGE)lpMAPIProp)->OpenAttach(ulAttachNum, NULL, MAPI_BEST_ACCESS, &lpAttach));
+			CORg(((LPMESSAGE)lpMAPIProp)->OpenAttach(currentRow, NULL, MAPI_BEST_ACCESS, &lpAttach));
 			ULONG cCount = 0;
 			SPropValue *rgprops = NULL;
 			CORg(lpAttach->GetProps(lpAttachTableProps, MAPI_UNICODE, &cCount, &rgprops));
