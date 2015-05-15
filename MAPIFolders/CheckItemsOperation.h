@@ -6,7 +6,7 @@ class CheckItemsOperation :
 public:
 	CheckItemsOperation(tstring *pstrBasePath, tstring *pstrMailbox, UserArgs::ActionScope nScope, Log *log, bool fix);
 	~CheckItemsOperation();
-	HRESULT Initialize();
+	HRESULT Initialize() override;
 	void ProcessItem(LPMAPIPROP item, LPCTSTR itemSubject);
 	void CheckItemsOperation::ProcessAttachmentsRecursive(LPMAPIPROP lpMessage);
 

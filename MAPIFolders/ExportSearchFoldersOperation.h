@@ -6,7 +6,7 @@ class ExportSearchFoldersOperation :
 public:
 	ExportSearchFoldersOperation(tstring *pstrBasePath, tstring *pstrMailbox, UserArgs::ActionScope nScope, Log *log, Log *exportFile);
 	~ExportSearchFoldersOperation();
-	HRESULT Initialize(void);
+	HRESULT Initialize(void) override;
 	void ProcessFolder(LPMAPIFOLDER folder, tstring folderPath);
 private:
 	tstring ExportSearchFoldersOperation::GetPropValueString(SPropValue thisProp);

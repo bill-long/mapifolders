@@ -31,7 +31,7 @@ class ModifyFolderPermissions :
 {
 public:
 	ModifyFolderPermissions(tstring *pstrBasePath, tstring *pstrMailbox, UserArgs::ActionScope nScope, bool remove, tstring *pstrUserString, tstring *pstrRightsString, Log *log);
-	HRESULT Initialize(void);
+	HRESULT Initialize(void) override;
 	void ProcessFolder(LPMAPIFOLDER folder, tstring folderPath);
 	~ModifyFolderPermissions(void);
 

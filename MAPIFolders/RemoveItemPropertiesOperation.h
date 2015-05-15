@@ -7,7 +7,7 @@ class RemoveItemPropertiesOperation :
 public:
 	RemoveItemPropertiesOperation(tstring *pstrBasePath, tstring *pstrMailbox, UserArgs::ActionScope nScope, Log *log, tstring *pstrPropTags);
 	~RemoveItemPropertiesOperation();
-	HRESULT Initialize();
+	HRESULT Initialize() override;
 	void ProcessItem(LPMAPIPROP lpMessage, LPCTSTR itemSubject);
 
 private:

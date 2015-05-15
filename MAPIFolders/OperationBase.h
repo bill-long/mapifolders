@@ -28,7 +28,7 @@ class OperationBase
 public:
 	OperationBase(tstring *basePath, tstring *mailbox, UserArgs::ActionScope scope, Log *log);
 	~OperationBase(void);
-	HRESULT OperationBase::Initialize(void);
+	virtual HRESULT OperationBase::Initialize(void);
 	void DoOperation();
 	virtual void ProcessFolder(LPMAPIFOLDER folder, tstring folderPath);
 	std::string GetStringFromFolderPath(LPMAPIFOLDER folder);

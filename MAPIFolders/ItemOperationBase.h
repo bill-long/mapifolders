@@ -6,7 +6,7 @@ class ItemOperationBase :
 public:
 	ItemOperationBase(tstring *pstrBasePath, tstring *pstrMailbox, UserArgs::ActionScope nScope, Log *log);
 	~ItemOperationBase();
-	HRESULT Initialize();
+	virtual HRESULT Initialize();
 	void ProcessFolder(LPMAPIFOLDER folder, tstring folderPath);
 	virtual void ProcessItem(LPMAPIPROP item, LPCTSTR itemSubject);
 };

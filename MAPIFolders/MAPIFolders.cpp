@@ -61,52 +61,36 @@ int _tmain(int argc, _TCHAR* argv[])
 			}
 			*pLog << "MAPIFolders started at " << lpTimeStr << "\n";
 
+			OperationBase *op = NULL;
+
 			if(ua.fCheckFolderAcl())
 			{
-				ValidateFolderACL *checkACLOp = new ValidateFolderACL(ua.pstrFolderPath(), ua.pstrMailbox(), ua.nScope(), false, pLog);
-				CORg(checkACLOp->Initialize());
-				OperationBase *op = checkACLOp;
-				op->DoOperation();
+				op = new ValidateFolderACL(ua.pstrFolderPath(), ua.pstrMailbox(), ua.nScope(), false, pLog);
 			}
 
 			if (ua.fFixFolderAcl())
 			{
-				ValidateFolderACL *checkACLOp = new ValidateFolderACL(ua.pstrFolderPath(), ua.pstrMailbox(), ua.nScope(), true, pLog);
-				CORg(checkACLOp->Initialize());
-				OperationBase *op = checkACLOp;
-				op->DoOperation();
+				op = new ValidateFolderACL(ua.pstrFolderPath(), ua.pstrMailbox(), ua.nScope(), true, pLog);
 			}
 
 			if (ua.fAddFolderPermission())
 			{
-				ModifyFolderPermissions *modifyPermsOp = new ModifyFolderPermissions(ua.pstrFolderPath(), ua.pstrMailbox(), ua.nScope(), false, ua.pstrUser(), ua.pstrRights(), pLog);
-				CORg(modifyPermsOp->Initialize());
-				OperationBase *op = modifyPermsOp;
-				op->DoOperation();
+				op = new ModifyFolderPermissions(ua.pstrFolderPath(), ua.pstrMailbox(), ua.nScope(), false, ua.pstrUser(), ua.pstrRights(), pLog);
 			}
 
 			if (ua.fRemoveFolderPermission())
 			{
-				ModifyFolderPermissions *modifyPermsOp = new ModifyFolderPermissions(ua.pstrFolderPath(), ua.pstrMailbox(), ua.nScope(), true, ua.pstrUser(), ua.pstrRights(), pLog);
-				CORg(modifyPermsOp->Initialize());
-				OperationBase *op = modifyPermsOp;
-				op->DoOperation();
+				op = new ModifyFolderPermissions(ua.pstrFolderPath(), ua.pstrMailbox(), ua.nScope(), true, ua.pstrUser(), ua.pstrRights(), pLog);
 			}
 
 			if (ua.fRemoveItemProperties())
 			{
-				RemoveItemPropertiesOperation *itemsOp = new RemoveItemPropertiesOperation(ua.pstrFolderPath(), ua.pstrMailbox(), ua.nScope(), pLog, ua.pstrProplist());
-				CORg(itemsOp->Initialize());
-				OperationBase *op = itemsOp;
-				op->DoOperation();
+				op = new RemoveItemPropertiesOperation(ua.pstrFolderPath(), ua.pstrMailbox(), ua.nScope(), pLog, ua.pstrProplist());
 			}
 
 			if(ua.fCheckItems() || ua.fFixItems())
 			{
-				CheckItemsOperation *checkItemsOp = new CheckItemsOperation(ua.pstrFolderPath(), ua.pstrMailbox(), ua.nScope(), pLog, ua.fFixItems());
-				CORg(checkItemsOp->Initialize());
-				OperationBase *op = checkItemsOp;
-				op->DoOperation();
+				op = new CheckItemsOperation(ua.pstrFolderPath(), ua.pstrMailbox(), ua.nScope(), pLog, ua.fFixItems());
 			}
 
 			if (ua.fExportFolderProperties())
@@ -116,16 +100,13 @@ int _tmain(int argc, _TCHAR* argv[])
 				exportFileName->append(pLog->pstrTimeString->c_str());
 				exportFileName->append(_T(".csv"));
 				CORg(exportFile->Initialize(exportFileName));
-				ExportFolderPropertiesOperation *exportFoldersOp = new ExportFolderPropertiesOperation(
+				op = new ExportFolderPropertiesOperation(
 					ua.pstrFolderPath(),
 					ua.pstrMailbox(),
 					ua.nScope(),
 					pLog,
 					ua.pstrProplist(),
 					exportFile);
-				CORg(exportFoldersOp->Initialize());
-				OperationBase *op = exportFoldersOp;
-				op->DoOperation();
 			}
 
 			if (ua.fExportFolderPermissions())
@@ -134,15 +115,12 @@ int _tmain(int argc, _TCHAR* argv[])
 				tstring *exportFileName = new tstring(_T("ExportFolderPermissions"));
 				exportFileName->append(pLog->pstrTimeString->c_str());
 				CORg(exportFile->Initialize(exportFileName));
-				ExportFolderPermissionsOperation *exportFoldersOp = new ExportFolderPermissionsOperation(
+				op = new ExportFolderPermissionsOperation(
 					ua.pstrFolderPath(),
 					ua.pstrMailbox(),
 					ua.nScope(),
 					pLog,
 					exportFile);
-				CORg(exportFoldersOp->Initialize());
-				OperationBase *op = exportFoldersOp;
-				op->DoOperation();
 			}
 
 			if (ua.fExportSearchFolders())
@@ -151,14 +129,16 @@ int _tmain(int argc, _TCHAR* argv[])
 				tstring *exportFileName = new tstring(_T("ExportSearchFolders"));
 				exportFileName->append(pLog->pstrTimeString->c_str());
 				CORg(exportFile->Initialize(exportFileName));
-				ExportSearchFoldersOperation *exportSearchFoldersOp = new ExportSearchFoldersOperation(
+				op = new ExportSearchFoldersOperation(
 					ua.pstrFolderPath(),
 					ua.pstrMailbox(),
 					ua.nScope(),
 					pLog,
 					exportFile);
-				CORg(exportSearchFoldersOp->Initialize());
-				OperationBase *op = exportSearchFoldersOp;
+			}
+
+			if (op) {
+				CORg(op->Initialize());
 				op->DoOperation();
 			}
 
