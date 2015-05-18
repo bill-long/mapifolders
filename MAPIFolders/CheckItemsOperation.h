@@ -8,7 +8,7 @@ public:
 	~CheckItemsOperation();
 	HRESULT Initialize() override;
 	void ProcessItem(LPMAPIPROP item, LPCTSTR itemSubject);
-	void CheckItemsOperation::ProcessAttachmentsRecursive(LPMAPIPROP lpMessage);
+	bool CheckItemsOperation::ProcessAttachmentsRecursive(LPMAPIPROP lpMessage);
 
 private:
 	bool fix;

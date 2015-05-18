@@ -114,7 +114,7 @@ Error:
 	goto Cleanup;
 }
 
-void CheckItemsOperation::ProcessAttachmentsRecursive(LPMAPIPROP lpMAPIProp)
+bool CheckItemsOperation::ProcessAttachmentsRecursive(LPMAPIPROP lpMAPIProp)
 {
 	HRESULT hr = S_OK;
 	LPMAPITABLE lpTable = NULL;
@@ -122,6 +122,7 @@ void CheckItemsOperation::ProcessAttachmentsRecursive(LPMAPIPROP lpMAPIProp)
 	LPSRowSet pRows = NULL;
 	LPATTACH lpAttach = NULL;
 	LPMESSAGE lpEmbeddedMessage = NULL;
+	bool bUpdatedItem = false;
 
 	CORg(((LPMESSAGE)lpMAPIProp)->GetAttachmentTable(0, &lpTable));
 	CORg(lpTable->QueryColumns(0, &lpColSet));
@@ -170,12 +171,15 @@ void CheckItemsOperation::ProcessAttachmentsRecursive(LPMAPIPROP lpMAPIProp)
 				}
 			}
 
-			*pLog << "        Checking attachment: " << (pwzAttachName ? pwzAttachName : _T("<NULL>")) << "\n";
-
 			if (ulAttachMethod == ATTACH_EMBEDDED_MSG)
 			{
 				CORg(lpAttach->OpenProperty(PR_ATTACH_DATA_OBJ, (LPIID)&IID_IMessage, 0, MAPI_MODIFY, (LPUNKNOWN *)&lpEmbeddedMessage));
 
+				// Recurse first
+				bUpdatedItem = this->ProcessAttachmentsRecursive(lpEmbeddedMessage);
+
+				// Now check this one
+				*pLog << "        Checking attachment: " << (pwzAttachName ? pwzAttachName : _T("<NULL>")) << "\n";
 				cCount = 0;
 				SPropValue *rgprops = NULL;
 				CORg(lpEmbeddedMessage->GetProps(lpPropsToRemove, MAPI_UNICODE, &cCount, &rgprops));
@@ -197,14 +201,17 @@ void CheckItemsOperation::ProcessAttachmentsRecursive(LPMAPIPROP lpMAPIProp)
 					// If we found any one of the specified props, just send a delete for all of them
 					LPSPropProblemArray problemArray = NULL;
 					CORg(lpEmbeddedMessage->DeleteProps(lpPropsToRemove, &problemArray));
-					CORg(lpEmbeddedMessage->SaveChanges(NULL));
-					CORg(lpAttach->SaveChanges(NULL));
-					CORg(lpMAPIProp->SaveChanges(NULL));
+					bUpdatedItem = true;
 					MAPIFreeBuffer(problemArray);
 					*pLog << "Done.\n";
 				}
 
-				this->ProcessAttachmentsRecursive(lpEmbeddedMessage);
+				if (bUpdatedItem) 
+				{
+					CORg(lpEmbeddedMessage->SaveChanges(NULL));
+					CORg(lpAttach->SaveChanges(NULL));
+					CORg(lpMAPIProp->SaveChanges(NULL));
+				}
 
 				lpEmbeddedMessage->Release();
 				lpEmbeddedMessage = NULL;
@@ -220,7 +227,7 @@ Cleanup:
 	if (lpColSet) MAPIFreeBuffer(lpColSet);
 	if (lpTable) lpTable->Release();
 	if (lpAttach) lpAttach->Release();
-	return;
+	return bUpdatedItem;
 
 Error:
 	goto Cleanup;
