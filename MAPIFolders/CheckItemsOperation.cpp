@@ -122,7 +122,7 @@ bool CheckItemsOperation::ProcessAttachmentsRecursive(LPMAPIPROP lpMAPIProp)
 	LPSRowSet pRows = NULL;
 	LPATTACH lpAttach = NULL;
 	LPMESSAGE lpEmbeddedMessage = NULL;
-	bool bUpdatedItem = false;
+	bool bUpdatedAnyItems = false;
 
 	CORg(((LPMESSAGE)lpMAPIProp)->GetAttachmentTable(0, &lpTable));
 	CORg(lpTable->QueryColumns(0, &lpColSet));
@@ -141,6 +141,7 @@ bool CheckItemsOperation::ProcessAttachmentsRecursive(LPMAPIPROP lpMAPIProp)
 		for (ULONG currentRow = 0; currentRow < pRows->cRows; currentRow++)
 		{
 			lpAttach = NULL;
+			ULONG bUpdatedThisItem = false;
 
 			SRow prow = pRows->aRow[currentRow];
 			LPCTSTR pwzAttachName = NULL;
@@ -176,7 +177,7 @@ bool CheckItemsOperation::ProcessAttachmentsRecursive(LPMAPIPROP lpMAPIProp)
 				CORg(lpAttach->OpenProperty(PR_ATTACH_DATA_OBJ, (LPIID)&IID_IMessage, 0, MAPI_MODIFY, (LPUNKNOWN *)&lpEmbeddedMessage));
 
 				// Recurse first
-				bUpdatedItem = this->ProcessAttachmentsRecursive(lpEmbeddedMessage);
+				bUpdatedThisItem = this->ProcessAttachmentsRecursive(lpEmbeddedMessage);
 
 				// Now check this one
 				*pLog << "        Checking attachment: " << (pwzAttachName ? pwzAttachName : _T("<NULL>")) << "\n";
@@ -201,13 +202,14 @@ bool CheckItemsOperation::ProcessAttachmentsRecursive(LPMAPIPROP lpMAPIProp)
 					// If we found any one of the specified props, just send a delete for all of them
 					LPSPropProblemArray problemArray = NULL;
 					CORg(lpEmbeddedMessage->DeleteProps(lpPropsToRemove, &problemArray));
-					bUpdatedItem = true;
+					bUpdatedThisItem = true;
 					MAPIFreeBuffer(problemArray);
 					*pLog << "Done.\n";
 				}
 
-				if (bUpdatedItem) 
+				if (bUpdatedThisItem)
 				{
+					bUpdatedAnyItems = true;
 					CORg(lpEmbeddedMessage->SaveChanges(NULL));
 					CORg(lpAttach->SaveChanges(NULL));
 					CORg(lpMAPIProp->SaveChanges(NULL));
@@ -227,7 +229,7 @@ Cleanup:
 	if (lpColSet) MAPIFreeBuffer(lpColSet);
 	if (lpTable) lpTable->Release();
 	if (lpAttach) lpAttach->Release();
-	return bUpdatedItem;
+	return bUpdatedAnyItems;
 
 Error:
 	goto Cleanup;
