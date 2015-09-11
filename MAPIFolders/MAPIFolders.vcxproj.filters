@@ -60,6 +60,9 @@
     <ClInclude Include="ExportSearchFoldersOperation.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="SearchTestOperation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -105,6 +108,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ExportSearchFoldersOperation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SearchTestOperation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

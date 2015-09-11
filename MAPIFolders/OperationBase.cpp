@@ -213,7 +213,7 @@ LPMAPIFOLDER OperationBase::GetMailboxRoot(IMAPISession *pSession)
 			CORg(lpXManageStore->CreateStoreEntryID(
 				szAnsiMsgStoreDN,
 				szAnsiMailboxDN,
-				OPENSTORE_TAKE_OWNERSHIP | OPENSTORE_USE_ADMIN_PRIVILEGE,
+				OPENSTORE_TAKE_OWNERSHIP,
 				&mailboxEID.cb,
 				(LPENTRYID*) &mailboxEID.lpb));
 			delete[] szAnsiMsgStoreDN;
@@ -552,6 +552,8 @@ HRESULT OperationBase::GetSubfolderByName(LPMAPIFOLDER parentFolder, tstring fol
 		}
 	};
 
+	*pLog << "Looking for folder: " << folderNameToFind << "\n";
+
 	CORg(parentFolder->GetHierarchyTable(NULL, &hierarchyTable));
 	CORg(hierarchyTable->SetColumns((LPSPropTagArray)&mcols, TBL_BATCH));
 	CORg(hierarchyTable->SeekRow(BOOKMARK_BEGINNING, 0, 0));
@@ -572,6 +574,7 @@ HRESULT OperationBase::GetSubfolderByName(LPMAPIFOLDER parentFolder, tstring fol
 			if (PR_DISPLAY_NAME_W == prow->lpProps[COL_DISPLAYNAME_W].ulPropTag)
 			{
 				pwz = prow->lpProps[COL_DISPLAYNAME_W].Value.lpszW;
+				*pLog << "  Found folder: " << pwz << "\n";
 				if (_tstricmp(folderNameToFind.c_str(), pwz) == 0)
 				{
 					CORg(this->lpAdminMDB->OpenEntry(prow->lpProps[COL_ENTRYID].Value.bin.cb, (LPENTRYID)prow->lpProps[COL_ENTRYID].Value.bin.lpb, NULL, MAPI_BEST_ACCESS, &ulObjType, (LPUNKNOWN *)returnedFolder));

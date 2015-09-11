@@ -137,6 +137,15 @@ int _tmain(int argc, _TCHAR* argv[])
 					exportFile);
 			}
 
+			if (ua.fSearchTest())
+			{
+				op = new SearchTestOperation(
+					ua.pstrFolderPath(),
+					ua.pstrMailbox(),
+					ua.nScope(),
+					pLog);
+			}
+
 			if (op) {
 				CORg(op->Initialize());
 				op->DoOperation();

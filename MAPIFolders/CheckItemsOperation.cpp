@@ -172,6 +172,9 @@ bool CheckItemsOperation::ProcessAttachmentsRecursive(LPMAPIPROP lpMAPIProp)
 				}
 			}
 
+			MAPIFreeBuffer(rgprops);
+			rgprops = NULL;
+
 			if (ulAttachMethod == ATTACH_EMBEDDED_MSG)
 			{
 				CORg(lpAttach->OpenProperty(PR_ATTACH_DATA_OBJ, (LPIID)&IID_IMessage, 0, MAPI_MODIFY, (LPUNKNOWN *)&lpEmbeddedMessage));
@@ -195,6 +198,7 @@ bool CheckItemsOperation::ProcessAttachmentsRecursive(LPMAPIPROP lpMAPIProp)
 				}
 
 				MAPIFreeBuffer(rgprops);
+				rgprops = NULL;
 
 				if (foundSomeProps && this->fix)
 				{
