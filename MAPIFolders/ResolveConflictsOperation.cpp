@@ -55,9 +55,6 @@ void ResolveConflictsOperation::ProcessItem(LPMAPIPROP lpMessage, LPCTSTR pwzSub
 	LPSRowSet pRows = NULL;
 	LPATTACH lpAttach = NULL;
 	LPMESSAGE lpEmbeddedMessage = NULL;
-	ULONG objType = NULL;
-	LPMAPIFOLDER lpParentFolder = NULL;
-	LPMESSAGE lpNewMessage = NULL;
 
 	*pLog << "Checking item: " << (pwzSubject ? pwzSubject : _T("<NULL>")) << "\n";
 
@@ -88,8 +85,6 @@ Cleanup:
 	if (lpColSet) MAPIFreeBuffer(lpColSet);
 	if (lpAttachTable) lpAttachTable->Release();
 	if (lpAttach) lpAttach->Release();
-	if (lpNewMessage) lpNewMessage->Release();
-	if (lpParentFolder) lpParentFolder->Release();
 	return;
 
 Error:
