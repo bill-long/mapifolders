@@ -75,9 +75,6 @@ void ResolveConflictsOperation::ProcessItem(LPMAPIPROP lpMessage, LPCTSTR pwzSub
 		CORg(lpAttachTable->QueryRows(1, NULL, &pRows));
 		if (FAILED(hr) || !pRows || !pRows->cRows) goto Cleanup;
 
-		//CORg(this->lpSession->OpenEntry(rgprops[1].Value.bin.cb, (LPENTRYID)rgprops[1].Value.bin.lpb, NULL, MAPI_BEST_ACCESS, &objType, (LPUNKNOWN *)&lpParentFolder));
-		//lpParentFolder->CreateMessage(NULL, 0, (LPMESSAGE *)&lpNewMessage);
-
 		CORg(((LPMESSAGE)lpMessage)->OpenAttach(0, NULL, MAPI_BEST_ACCESS, &lpAttach));
 		CORg(lpAttach->OpenProperty(PR_ATTACH_DATA_OBJ, (LPIID)&IID_IMessage, 0, MAPI_MODIFY, (LPUNKNOWN *)&lpEmbeddedMessage));
 		CORg(lpEmbeddedMessage->CopyTo(0, NULL, NULL, NULL, NULL, (LPGUID)&IID_IMessage, lpMessage, 0, NULL));
