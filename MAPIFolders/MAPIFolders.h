@@ -22,6 +22,7 @@
 #include "ModifyFolderPermissions.h"
 #include "RemoveItemPropertiesOperation.h"
 #include "CheckItemsOperation.h"
+#include "ResolveConflictsOperation.h"
 #include "ExportFolderPropertiesOperation.h"
 #include "ExportFolderPermissionsOperation.h"
 #include "ExportSearchFoldersOperation.h"

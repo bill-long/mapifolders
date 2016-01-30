@@ -93,6 +93,11 @@ int _tmain(int argc, _TCHAR* argv[])
 				op = new CheckItemsOperation(ua.pstrFolderPath(), ua.pstrMailbox(), ua.nScope(), pLog, ua.fFixItems());
 			}
 
+			if (ua.fResolveConflicts())
+			{
+				op = new ResolveConflictsOperation(ua.pstrFolderPath(), ua.pstrMailbox(), ua.nScope(), pLog);
+			}
+
 			if (ua.fExportFolderProperties())
 			{
 				Log *exportFile = new Log(NULL, false);
