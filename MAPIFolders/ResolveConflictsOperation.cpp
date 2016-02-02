@@ -30,8 +30,8 @@ HRESULT ResolveConflictsOperation::Initialize()
 		lpMsgProps->aulPropTag[x] = msgProps[x];
 	}
 
-	ULONG cAttachTableProps = 3;
-	ULONG attachTableProps[3] = { PR_ATTACH_NUM, PR_ATTACH_FILENAME, PR_ATTACH_METHOD };
+	ULONG cAttachTableProps = 4;
+	ULONG attachTableProps[4] = { PR_ATTACH_NUM, PR_ATTACH_FILENAME, PR_ATTACH_METHOD, PR_IN_CONFLICT };
 	this->lpAttachProps = NULL;
 	CORg(MAPIAllocateBuffer(CbNewSPropTagArray(cAttachTableProps),
 		(LPVOID*)&lpAttachProps));
@@ -69,15 +69,44 @@ void ResolveConflictsOperation::ProcessItem(LPMAPIPROP lpMessage, LPCTSTR pwzSub
 		CORg(((LPMESSAGE)lpMessage)->GetAttachmentTable(0, &lpAttachTable));
 		CORg(lpAttachTable->QueryColumns(0, &lpColSet));
 		CORg(lpAttachTable->SeekRow(BOOKMARK_BEGINNING, 0, NULL));
-		CORg(lpAttachTable->QueryRows(1, NULL, &pRows));
+		CORg(lpAttachTable->QueryRows(1000, NULL, &pRows));
 		if (FAILED(hr) || !pRows || !pRows->cRows) goto Cleanup;
+		for (ULONG currentRow = 0; currentRow < pRows->cRows; currentRow++)
+		{
+			if (lpAttach) lpAttach->Release();
+			SRow prow = pRows->aRow[currentRow];
 
-		CORg(((LPMESSAGE)lpMessage)->OpenAttach(0, NULL, MAPI_BEST_ACCESS, &lpAttach));
-		CORg(lpAttach->OpenProperty(PR_ATTACH_DATA_OBJ, (LPIID)&IID_IMessage, 0, MAPI_MODIFY, (LPUNKNOWN *)&lpEmbeddedMessage));
-		CORg(lpEmbeddedMessage->CopyTo(0, NULL, NULL, NULL, NULL, (LPGUID)&IID_IMessage, lpMessage, 0, NULL));
-		CORg(lpMessage->SaveChanges(0));
-		
-		*pLog << "    Conflict resolved." << "\n";
+			CORg(((LPMESSAGE)lpMessage)->OpenAttach(currentRow, NULL, MAPI_BEST_ACCESS, &lpAttach));
+			ULONG cCount = 0;
+			SPropValue *rgprops = NULL;
+			CORg(lpAttach->GetProps(lpAttachProps, MAPI_UNICODE, &cCount, &rgprops));
+
+			bool isConflictAttach = false;
+			for (ULONG y = 0; y < cCount; y++)
+			{
+				if (PROP_TYPE(rgprops[y].ulPropTag) != PT_ERROR)
+				{
+					if (rgprops[y].ulPropTag == PR_IN_CONFLICT)
+					{
+						if (rgprops[y].Value.b == true)
+						{
+							isConflictAttach = true;
+							break;
+						}
+					}
+				}
+			}
+
+			if (isConflictAttach)
+			{
+				CORg(lpAttach->OpenProperty(PR_ATTACH_DATA_OBJ, (LPIID)&IID_IMessage, 0, MAPI_MODIFY, (LPUNKNOWN *)&lpEmbeddedMessage));
+				CORg(lpEmbeddedMessage->CopyTo(0, NULL, NULL, NULL, NULL, (LPGUID)&IID_IMessage, lpMessage, 0, NULL));
+				CORg(lpMessage->SaveChanges(0));
+
+				*pLog << "    Conflict resolved." << "\n";
+				break;
+			}
+		}
 	}
 
 Cleanup:
