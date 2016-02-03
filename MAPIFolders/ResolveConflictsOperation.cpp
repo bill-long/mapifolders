@@ -78,8 +78,8 @@ void ResolveConflictsOperation::ProcessItem(LPMAPIPROP lpMessage, LPCTSTR pwzSub
 
 			CORg(((LPMESSAGE)lpMessage)->OpenAttach(currentRow, NULL, MAPI_BEST_ACCESS, &lpAttach));
 			ULONG cCount = 0;
-			SPropValue *rgprops = NULL;
-			CORg(lpAttach->GetProps(lpAttachProps, MAPI_UNICODE, &cCount, &rgprops));
+			SPropValue *rgAttachProps = NULL;
+			CORg(lpAttach->GetProps(lpAttachProps, MAPI_UNICODE, &cCount, &rgAttachProps));
 
 			bool isConflictAttach = false;
 			for (ULONG y = 0; y < cCount; y++)
@@ -97,6 +97,8 @@ void ResolveConflictsOperation::ProcessItem(LPMAPIPROP lpMessage, LPCTSTR pwzSub
 				}
 			}
 
+			MAPIFreeBuffer(rgAttachProps);
+
 			if (isConflictAttach)
 			{
 				CORg(lpAttach->OpenProperty(PR_ATTACH_DATA_OBJ, (LPIID)&IID_IMessage, 0, MAPI_MODIFY, (LPUNKNOWN *)&lpEmbeddedMessage));
@@ -108,6 +110,8 @@ void ResolveConflictsOperation::ProcessItem(LPMAPIPROP lpMessage, LPCTSTR pwzSub
 			}
 		}
 	}
+
+	MAPIFreeBuffer(rgprops);
 
 Cleanup:
 	if (pRows) FreeProws(pRows);
