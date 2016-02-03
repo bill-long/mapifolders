@@ -4,7 +4,7 @@ class ExportSearchFoldersOperation :
 	public OperationBase
 {
 public:
-	ExportSearchFoldersOperation(tstring *pstrBasePath, tstring *pstrMailbox, UserArgs::ActionScope nScope, Log *log, Log *exportFile);
+	ExportSearchFoldersOperation(tstring *pstrBasePath, tstring *pstrMailbox, UserArgs::ActionScope nScope, Log *log, Log *exportFile, bool useAdmin);
 	~ExportSearchFoldersOperation();
 	HRESULT Initialize(void) override;
 	void ProcessFolder(LPMAPIFOLDER folder, tstring folderPath);

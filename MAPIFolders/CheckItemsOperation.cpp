@@ -5,8 +5,8 @@
 DEFINE_OLEGUID(IID_IMAPITable, 0x00020301, 0, 0);
 DEFINE_OLEGUID(IID_IMessage, 0x00020307, 0, 0);
 
-CheckItemsOperation::CheckItemsOperation(tstring *pstrBasePath, tstring *pstrMailbox, UserArgs::ActionScope nScope, Log *log, bool fix)
-	:ItemOperationBase(pstrBasePath, pstrMailbox, nScope, log)
+CheckItemsOperation::CheckItemsOperation(tstring *pstrBasePath, tstring *pstrMailbox, UserArgs::ActionScope nScope, Log *log, bool fix, bool useAdmin)
+	:ItemOperationBase(pstrBasePath, pstrMailbox, nScope, log, useAdmin)
 {
 	this->fix = fix;
 }

@@ -3,7 +3,7 @@
 #include <iostream>
 #include <tchar.h>
 
-#define _COUNTOFACCEPTEDSWITCHES (17)
+#define _COUNTOFACCEPTEDSWITCHES (18)
 #define _COUNTOFSCOPES (3)
 
 typedef std::basic_string<TCHAR> tstring;
@@ -37,6 +37,7 @@ public:
 	tstring *pstrUser() {return m_pstrUser;}
 	tstring *pstrRights() {return m_pstrRights;}
 	tstring *pstrProplist() { return m_pstrProplist; }
+	bool bUseAdmin() { return m_bUseAdmin; }
 
 	// Enum for the possible scopes for operations
 	enum ActionScope : short int
@@ -110,6 +111,7 @@ private:
 	static const unsigned long EXPORTFOLDERPERMISSIONS = 1 << 13;
 	static const unsigned long EXPORTSEARCHFOLDERS = 1 << 14;
 	static const unsigned long RESOLVECONFLICTS = 1 << 15;
+	static const unsigned long NOADMIN = 1 << 16; // Not an action
 	static const unsigned long DISPLAYHELP=1<<31;	// User requested help in a valid syntax
 
 	// Error codes
@@ -132,6 +134,7 @@ private:
 	tstring *m_pstrUser;
 	tstring *m_pstrRights;	
 	tstring *m_pstrProplist;
+	bool m_bUseAdmin;
 
 	// An array of switch structures defining the acceptable switches
 	static const ArgSwitch rgArgSwitches[_COUNTOFACCEPTEDSWITCHES];

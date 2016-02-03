@@ -3,8 +3,8 @@
 #include <MAPIDefS.h>
 
 
-ItemOperationBase::ItemOperationBase(tstring *pstrBasePath, tstring *pstrMailbox, UserArgs::ActionScope nScope, Log *log)
-	:OperationBase(pstrBasePath, pstrMailbox, nScope, log)
+ItemOperationBase::ItemOperationBase(tstring *pstrBasePath, tstring *pstrMailbox, UserArgs::ActionScope nScope, Log *log, bool useAdmin)
+	:OperationBase(pstrBasePath, pstrMailbox, nScope, log, useAdmin)
 {
 }
 

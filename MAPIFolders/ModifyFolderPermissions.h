@@ -30,7 +30,7 @@ class ModifyFolderPermissions :
 	public OperationBase
 {
 public:
-	ModifyFolderPermissions(tstring *pstrBasePath, tstring *pstrMailbox, UserArgs::ActionScope nScope, bool remove, tstring *pstrUserString, tstring *pstrRightsString, Log *log);
+	ModifyFolderPermissions(tstring *pstrBasePath, tstring *pstrMailbox, UserArgs::ActionScope nScope, bool remove, tstring *pstrUserString, tstring *pstrRightsString, Log *log, bool useAdmin);
 	HRESULT Initialize(void) override;
 	void ProcessFolder(LPMAPIFOLDER folder, tstring folderPath);
 	~ModifyFolderPermissions(void);

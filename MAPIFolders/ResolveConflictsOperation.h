@@ -5,7 +5,7 @@ class ResolveConflictsOperation :
 	public ItemOperationBase
 {
 public:
-	ResolveConflictsOperation(tstring *pstrBasePath, tstring *pstrMailbox, UserArgs::ActionScope nScope, Log *log);
+	ResolveConflictsOperation(tstring *pstrBasePath, tstring *pstrMailbox, UserArgs::ActionScope nScope, Log *log, bool useAdmin);
 	~ResolveConflictsOperation();
 	HRESULT Initialize() override;
 	void ProcessItem(LPMAPIPROP lpMessage, LPCTSTR itemSubject);

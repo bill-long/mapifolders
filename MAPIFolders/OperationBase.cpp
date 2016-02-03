@@ -3,13 +3,14 @@
 #include "MAPIFolders.h"
 #include <algorithm>
 
-OperationBase::OperationBase(tstring *pstrBasePath, tstring *pstrMailbox, UserArgs::ActionScope nScope, Log *log)
+OperationBase::OperationBase(tstring *pstrBasePath, tstring *pstrMailbox, UserArgs::ActionScope nScope, Log *log, bool useAdmin)
 {
 	this->lpAdminMDB = NULL;
 	this->strBasePath = pstrBasePath;
 	this->strMailbox = pstrMailbox;
 	this->nScope = nScope;
 	this->pLog = log;
+	this->useAdmin = useAdmin;
 	this->lpAdrBook = NULL;
 	this->lpRootFolder = NULL;
 	this->lpStartingFolder = NULL;
@@ -50,7 +51,6 @@ Error:
 HRESULT OperationBase::Initialize(void)
 {
 	HRESULT hr = S_OK;
-	lpAdminMDB = NULL;
 	lpRootFolder = NULL;
 	lpStartingFolder = NULL;
 	lpSession = NULL;
@@ -203,6 +203,9 @@ LPMAPIFOLDER OperationBase::GetMailboxRoot(IMAPISession *pSession)
 			_T("/cn=Microsoft Private MDB"), // STRING_OK
 			&lpszMsgStoreDN));
 
+		ULONG flags = OPENSTORE_TAKE_OWNERSHIP;
+		if (this->useAdmin) flags = flags | OPENSTORE_USE_ADMIN_PRIVILEGE;
+
 #ifdef UNICODE
 		{
 			char *szAnsiMsgStoreDN = NULL;
@@ -213,7 +216,7 @@ LPMAPIFOLDER OperationBase::GetMailboxRoot(IMAPISession *pSession)
 			CORg(lpXManageStore->CreateStoreEntryID(
 				szAnsiMsgStoreDN,
 				szAnsiMailboxDN,
-				OPENSTORE_TAKE_OWNERSHIP | OPENSTORE_USE_ADMIN_PRIVILEGE,
+				flags,
 				&mailboxEID.cb,
 				(LPENTRYID*) &mailboxEID.lpb));
 			delete[] szAnsiMsgStoreDN;
@@ -343,6 +346,9 @@ LPMAPIFOLDER OperationBase::GetPFRoot(IMAPISession *pSession)
 		IID_IExchangeManageStore,
 		(LPVOID*) &lpXManageStore));
 
+	ULONG flags = OPENSTORE_PUBLIC;
+	if (this->useAdmin) flags = flags | OPENSTORE_USE_ADMIN_PRIVILEGE;
+
 #ifdef UNICODE
 		{
 			char *szAnsiMsgStoreDN = NULL;
@@ -351,7 +357,7 @@ LPMAPIFOLDER OperationBase::GetPFRoot(IMAPISession *pSession)
 			CORg(lpXManageStore->CreateStoreEntryID(
 				szAnsiMsgStoreDN,
 				NULL,
-				OPENSTORE_PUBLIC | OPENSTORE_USE_ADMIN_PRIVILEGE,
+				flags,
 				&adminEntryID.cb,
 				(LPENTRYID*) &adminEntryID.lpb));
 			delete[] szAnsiMsgStoreDN;

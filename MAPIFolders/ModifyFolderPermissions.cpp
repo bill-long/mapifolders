@@ -3,8 +3,8 @@
 #include "OperationBase.h"
 #include "MAPIFolders.h"
 
-ModifyFolderPermissions::ModifyFolderPermissions(tstring *pstrBasePath, tstring *pstrMailbox, UserArgs::ActionScope nScope, bool remove, tstring *pstrUserString, tstring *pstrRightsString, Log *log)
-	:OperationBase(pstrBasePath, pstrMailbox, nScope, log)
+ModifyFolderPermissions::ModifyFolderPermissions(tstring *pstrBasePath, tstring *pstrMailbox, UserArgs::ActionScope nScope, bool remove, tstring *pstrUserString, tstring *pstrRightsString, Log *log, bool useAdmin)
+	:OperationBase(pstrBasePath, pstrMailbox, nScope, log, useAdmin)
 {
 	this->remove = remove;
 	this->pstrUserString = pstrUserString;

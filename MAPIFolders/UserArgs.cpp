@@ -21,6 +21,7 @@ const UserArgs::ArgSwitch UserArgs::rgArgSwitches[_COUNTOFACCEPTEDSWITCHES] =
 	{_T("ExportFolderPermissions"), _T("Export Folder Permissions"), false, EXPORTFOLDERPERMISSIONS },
 	{_T("ExportSearchFolders"), _T("Export Search Folders"), false, EXPORTSEARCHFOLDERS },
 	{_T("ResolveConflicts"), _T("Resolve Item Conflicts"), false, RESOLVECONFLICTS},
+	{_T("NoAdmin"), _T("Do Not Use Admin Rights"), false, NOADMIN},
 	{_T("Scope"), _T("Action Scope"), true, SCOPE},
 	{_T("Mailbox"), _T("Mailbox"), true, MAILBOX},
 	{_T("?"), _T("Help"), false, DISPLAYHELP},
@@ -61,6 +62,7 @@ UserArgs::UserArgs(void)
 	 m_pstrUser = NULL;
 	 m_pstrRights = NULL;
 	 m_pstrProplist = NULL;
+	 m_bUseAdmin = true;
 	// Default _actions
 	init();
 }
@@ -157,8 +159,14 @@ bool UserArgs::Parse(int argc, TCHAR* argv[])
 					// Is this a simple- or a value-switch?
 					if(!rgArgSwitches[i].fHasValue)
 					{
+						// -NoAdmin switch is special
+						if (0 == _tcsnicmp(pchCurrent, L"NoAdmin", 7))
+						{
+							m_bUseAdmin = false;
+							foundSimpleSwitch = true;
+						}
 						// Search for an exact match for non-value (i.e. simple) switches
-						if(0==_tcsnicmp(pchCurrent, rgArgSwitches[i].pszSwitch, FILENAME_MAX))	// arbitrary max length
+						else if(0==_tcsnicmp(pchCurrent, rgArgSwitches[i].pszSwitch, FILENAME_MAX))	// arbitrary max length
 						{
 							// matched a switch
 							// Only one action allowed for now

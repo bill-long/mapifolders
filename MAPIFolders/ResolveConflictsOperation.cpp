@@ -2,8 +2,8 @@
 #include "MAPIFolders.h"
 #include <MAPIDefS.h>
 
-ResolveConflictsOperation::ResolveConflictsOperation(tstring *pstrBasePath, tstring *pstrMailbox, UserArgs::ActionScope nScope, Log *log)
-	:ItemOperationBase(pstrBasePath, pstrMailbox, nScope, log)
+ResolveConflictsOperation::ResolveConflictsOperation(tstring *pstrBasePath, tstring *pstrMailbox, UserArgs::ActionScope nScope, Log *log, bool useAdmin)
+	:ItemOperationBase(pstrBasePath, pstrMailbox, nScope, log, useAdmin)
 {
 }
 

@@ -9,8 +9,8 @@ struct SavedACEInfo
 	long accessRights;
 };
 
-ValidateFolderACL::ValidateFolderACL(tstring *pstrBasePath, tstring *pstrMailbox, UserArgs::ActionScope nScope, bool fixBadACLs, Log *log)
-	:OperationBase(pstrBasePath, pstrMailbox, nScope, log)
+ValidateFolderACL::ValidateFolderACL(tstring *pstrBasePath, tstring *pstrMailbox, UserArgs::ActionScope nScope, bool fixBadACLs, Log *log, bool useAdmin)
+	:OperationBase(pstrBasePath, pstrMailbox, nScope, log, useAdmin)
 {
 	this->FixBadACLs = fixBadACLs;
 	this->IsInitialized = false;

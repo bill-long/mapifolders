@@ -7,8 +7,8 @@ struct ID
 	BYTE globcnt[6];
 };
 
-ExportFolderPropertiesOperation::ExportFolderPropertiesOperation(tstring *pstrBasePath, tstring *pstrMailbox, UserArgs::ActionScope nScope, Log *log, tstring *pstrPropTags, Log *exportFile)
-	:OperationBase(pstrBasePath, pstrMailbox, nScope, log)
+ExportFolderPropertiesOperation::ExportFolderPropertiesOperation(tstring *pstrBasePath, tstring *pstrMailbox, UserArgs::ActionScope nScope, Log *log, tstring *pstrPropTags, Log *exportFile, bool useAdmin)
+	:OperationBase(pstrBasePath, pstrMailbox, nScope, log, useAdmin)
 {
 	this->exportFile = exportFile;
 	this->pstrPropTags = pstrPropTags;

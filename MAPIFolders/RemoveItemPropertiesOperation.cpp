@@ -2,8 +2,8 @@
 #include "MAPIFolders.h"
 #include <MAPIDefS.h>
 
-RemoveItemPropertiesOperation::RemoveItemPropertiesOperation(tstring *pstrBasePath, tstring *pstrMailbox, UserArgs::ActionScope nScope, Log *log, tstring *pstrPropTags)
-	:ItemOperationBase(pstrBasePath, pstrMailbox, nScope, log)
+RemoveItemPropertiesOperation::RemoveItemPropertiesOperation(tstring *pstrBasePath, tstring *pstrMailbox, UserArgs::ActionScope nScope, Log *log, tstring *pstrPropTags, bool useAdmin)
+	:ItemOperationBase(pstrBasePath, pstrMailbox, nScope, log, useAdmin)
 {
 	this->pstrPropTags = pstrPropTags;
 }

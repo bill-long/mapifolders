@@ -4,7 +4,7 @@ class CheckItemsOperation :
 	public ItemOperationBase
 {
 public:
-	CheckItemsOperation(tstring *pstrBasePath, tstring *pstrMailbox, UserArgs::ActionScope nScope, Log *log, bool fix);
+	CheckItemsOperation(tstring *pstrBasePath, tstring *pstrMailbox, UserArgs::ActionScope nScope, Log *log, bool fix, bool useAdmin);
 	~CheckItemsOperation();
 	HRESULT Initialize() override;
 	void ProcessItem(LPMAPIPROP item, LPCTSTR itemSubject);

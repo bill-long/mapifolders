@@ -2,8 +2,8 @@
 #include "MAPIFolders.h"
 
 
-ExportFolderPermissionsOperation::ExportFolderPermissionsOperation(tstring *pstrBasePath, tstring *pstrMailbox, UserArgs::ActionScope nScope, Log *log, Log *exportFile)
-	:OperationBase(pstrBasePath, pstrMailbox, nScope, log)
+ExportFolderPermissionsOperation::ExportFolderPermissionsOperation(tstring *pstrBasePath, tstring *pstrMailbox, UserArgs::ActionScope nScope, Log *log, Log *exportFile, bool useAdmin)
+	:OperationBase(pstrBasePath, pstrMailbox, nScope, log, useAdmin)
 {
 	this->exportFile = exportFile;
 }

@@ -65,37 +65,37 @@ int _tmain(int argc, _TCHAR* argv[])
 
 			if(ua.fCheckFolderAcl())
 			{
-				op = new ValidateFolderACL(ua.pstrFolderPath(), ua.pstrMailbox(), ua.nScope(), false, pLog);
+				op = new ValidateFolderACL(ua.pstrFolderPath(), ua.pstrMailbox(), ua.nScope(), false, pLog, ua.bUseAdmin());
 			}
 
 			if (ua.fFixFolderAcl())
 			{
-				op = new ValidateFolderACL(ua.pstrFolderPath(), ua.pstrMailbox(), ua.nScope(), true, pLog);
+				op = new ValidateFolderACL(ua.pstrFolderPath(), ua.pstrMailbox(), ua.nScope(), true, pLog, ua.bUseAdmin());
 			}
 
 			if (ua.fAddFolderPermission())
 			{
-				op = new ModifyFolderPermissions(ua.pstrFolderPath(), ua.pstrMailbox(), ua.nScope(), false, ua.pstrUser(), ua.pstrRights(), pLog);
+				op = new ModifyFolderPermissions(ua.pstrFolderPath(), ua.pstrMailbox(), ua.nScope(), false, ua.pstrUser(), ua.pstrRights(), pLog, ua.bUseAdmin());
 			}
 
 			if (ua.fRemoveFolderPermission())
 			{
-				op = new ModifyFolderPermissions(ua.pstrFolderPath(), ua.pstrMailbox(), ua.nScope(), true, ua.pstrUser(), ua.pstrRights(), pLog);
+				op = new ModifyFolderPermissions(ua.pstrFolderPath(), ua.pstrMailbox(), ua.nScope(), true, ua.pstrUser(), ua.pstrRights(), pLog, ua.bUseAdmin());
 			}
 
 			if (ua.fRemoveItemProperties())
 			{
-				op = new RemoveItemPropertiesOperation(ua.pstrFolderPath(), ua.pstrMailbox(), ua.nScope(), pLog, ua.pstrProplist());
+				op = new RemoveItemPropertiesOperation(ua.pstrFolderPath(), ua.pstrMailbox(), ua.nScope(), pLog, ua.pstrProplist(), ua.bUseAdmin());
 			}
 
 			if(ua.fCheckItems() || ua.fFixItems())
 			{
-				op = new CheckItemsOperation(ua.pstrFolderPath(), ua.pstrMailbox(), ua.nScope(), pLog, ua.fFixItems());
+				op = new CheckItemsOperation(ua.pstrFolderPath(), ua.pstrMailbox(), ua.nScope(), pLog, ua.fFixItems(), ua.bUseAdmin());
 			}
 
 			if (ua.fResolveConflicts())
 			{
-				op = new ResolveConflictsOperation(ua.pstrFolderPath(), ua.pstrMailbox(), ua.nScope(), pLog);
+				op = new ResolveConflictsOperation(ua.pstrFolderPath(), ua.pstrMailbox(), ua.nScope(), pLog, ua.bUseAdmin());
 			}
 
 			if (ua.fExportFolderProperties())
@@ -111,7 +111,7 @@ int _tmain(int argc, _TCHAR* argv[])
 					ua.nScope(),
 					pLog,
 					ua.pstrProplist(),
-					exportFile);
+					exportFile, ua.bUseAdmin());
 			}
 
 			if (ua.fExportFolderPermissions())
@@ -125,7 +125,7 @@ int _tmain(int argc, _TCHAR* argv[])
 					ua.pstrMailbox(),
 					ua.nScope(),
 					pLog,
-					exportFile);
+					exportFile, ua.bUseAdmin());
 			}
 
 			if (ua.fExportSearchFolders())
@@ -139,7 +139,7 @@ int _tmain(int argc, _TCHAR* argv[])
 					ua.pstrMailbox(),
 					ua.nScope(),
 					pLog,
-					exportFile);
+					exportFile, ua.bUseAdmin());
 			}
 
 			if (op) {

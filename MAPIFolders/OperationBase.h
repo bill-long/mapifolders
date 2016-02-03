@@ -26,7 +26,7 @@
 class OperationBase
 {
 public:
-	OperationBase(tstring *basePath, tstring *mailbox, UserArgs::ActionScope scope, Log *log);
+	OperationBase(tstring *basePath, tstring *mailbox, UserArgs::ActionScope scope, Log *log, bool useAdmin);
 	~OperationBase(void);
 	virtual HRESULT OperationBase::Initialize(void);
 	void DoOperation();
@@ -73,4 +73,5 @@ protected:
 	tstring *strBasePath;
 	tstring *strMailbox;
 	UserArgs::ActionScope nScope;
+	bool useAdmin;
 };
