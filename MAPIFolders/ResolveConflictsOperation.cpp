@@ -84,11 +84,11 @@ void ResolveConflictsOperation::ProcessItem(LPMAPIPROP lpMessage, LPCTSTR pwzSub
 			bool isConflictAttach = false;
 			for (ULONG y = 0; y < cCount; y++)
 			{
-				if (PROP_TYPE(rgprops[y].ulPropTag) != PT_ERROR)
+				if (PROP_TYPE(rgAttachProps[y].ulPropTag) != PT_ERROR)
 				{
-					if (rgprops[y].ulPropTag == PR_IN_CONFLICT)
+					if (rgAttachProps[y].ulPropTag == PR_IN_CONFLICT)
 					{
-						if (rgprops[y].Value.b == true)
+						if (rgAttachProps[y].Value.b == true)
 						{
 							isConflictAttach = true;
 							break;
