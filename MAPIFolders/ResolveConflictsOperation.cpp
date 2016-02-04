@@ -104,6 +104,7 @@ void ResolveConflictsOperation::ProcessItem(LPMAPIPROP lpMessage, LPCTSTR pwzSub
 				CORg(lpAttach->OpenProperty(PR_ATTACH_DATA_OBJ, (LPIID)&IID_IMessage, 0, MAPI_MODIFY, (LPUNKNOWN *)&lpEmbeddedMessage));
 				CORg(lpEmbeddedMessage->CopyTo(0, NULL, NULL, NULL, NULL, (LPGUID)&IID_IMessage, lpMessage, 0, NULL));
 				CORg(lpMessage->SaveChanges(0));
+				lpEmbeddedMessage->Release();
 
 				*pLog << "    Conflict resolved." << "\n";
 				break;
