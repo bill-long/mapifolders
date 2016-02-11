@@ -16,6 +16,7 @@ private:
 	bool FixBadACLs;
 	bool IsInitialized;
 	PSID psidAnonymous;
+	PSID psidEveryone;
 	void FixACL(LPMAPIFOLDER folder);
 	HRESULT CheckACLTable(LPMAPIFOLDER folder, bool &aclTableIsGood);
 };

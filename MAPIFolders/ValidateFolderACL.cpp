@@ -25,11 +25,12 @@ HRESULT ValidateFolderACL::Initialize(void)
 {
 	HRESULT hr = S_OK;
 	this->psidAnonymous = (PSID)malloc(SECURITY_MAX_SID_SIZE);
+	this->psidEveryone = (PSID)malloc(SECURITY_MAX_SID_SIZE);
 	DWORD dwLength = SECURITY_MAX_SID_SIZE;
 
 	CORg(OperationBase::Initialize());
 
-	if (!this->psidAnonymous)
+	if (!this->psidAnonymous || !this->psidEveryone)
 	{
 		*pLog << "Failed to allocate memory" << "\n";
 		hr = HRESULT_FROM_WIN32(GetLastError());
@@ -39,6 +40,14 @@ HRESULT ValidateFolderACL::Initialize(void)
 	if (!CreateWellKnownSid(WinAnonymousSid, NULL, this->psidAnonymous, &dwLength))
 	{
 		*pLog << "Failed to create Anonymous SID" << "\n";
+		hr = HRESULT_FROM_WIN32(GetLastError());
+		goto Error;
+	}
+
+	dwLength = SECURITY_MAX_SID_SIZE;
+	if (!CreateWellKnownSid(WinWorldSid, NULL, this->psidEveryone, &dwLength))
+	{
+		*pLog << "Failed to create Everyone SID" << "\n";
 		hr = HRESULT_FROM_WIN32(GetLastError());
 		goto Error;
 	}
@@ -123,6 +132,7 @@ RetryGetProps:
 		bool groupDenyEncountered = false;
 		bool aclIsNonCanonical = false;
 		BOOL foundAnonymous = false;
+		BOOL foundEveryone = false;
 
 		for (DWORD x = 0; x < ACLSizeInfo.AceCount; x++)
 		{
@@ -187,6 +197,16 @@ RetryGetProps:
 					break;
 				}
 
+				if (foundEveryone && !EqualSid(SidStart, this->psidEveryone))
+				{
+					// If we found any ACE that is not Everyone, but we already have the Everyone ACE,
+					// this ACL is non-canonical.
+					*pLog << "     ACL on this folder is non-canonical" << "\n";
+					*pLog << "     Everyone group is not last" << "\n";
+					aclIsNonCanonical = true;
+					continue;
+				}
+
 				if (!foundAnonymous)
 				{
 					foundAnonymous = EqualSid(SidStart, this->psidAnonymous);
@@ -239,6 +259,11 @@ RetryGetProps:
 					aclIsNonCanonical = true;
 				}
 
+				if (!foundEveryone)
+				{
+					foundEveryone = EqualSid(SidStart, this->psidEveryone);
+				}
+
 				delete[] lpSidDomain;
 				delete[] lpSidName;
 
@@ -287,6 +312,12 @@ HRESULT ValidateFolderACL::CheckACLTable(LPMAPIFOLDER folder, bool &aclTableIsGo
 	// Use a nested loop to check for duplicate entries
 	for (x = 0; x < pRows->cRows; x++)
 	{
+		// Don't bother comparing null member IDs
+		if (pRows->aRow[x].lpProps[ePR_MEMBER_ID].Value.l == 0x0)
+		{
+			continue;
+		}
+
 		for (y = 0; y < pRows->cRows; y++)
 		{
 			if (x == y)
